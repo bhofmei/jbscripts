@@ -157,7 +157,7 @@ def generateGenomeSource( genomeVersion, sourceLabel, sourceLink ):
 			outStr += '\n'
 		else:
 			outStr += ',\n'
-	if genomeVersion != "":
+	if sourceLabel != "":
 		outStr += tab(4) + '"Source" : "{:s}"\n'.format( sourceLabel )
 	outStr += tab(3) + '}'
 	if sourceLabel != "" and sourceLink != "":
@@ -482,7 +482,7 @@ def getColors( typeStr ):
 		'chh':'#1e90ff','h3k27m3':'#617ed7','h3t32':'#32a2a2',
 		'h3k36m1':'#AE2020','h3k36m2':'#D42727', 'h3k4m1':'#6A228D',
 		'h3k4m2':'#872CB3','sdg7':'#2e8b57','basej':'#228b22', 
-		'h3t32g' :'#00688b' }
+		'h3t32g' :'#00688b', 'methyl':'#a1a1a1' }
 	outStr = typeDict.get( typeStr.lower() )
 	if outStr == None:
 		if typeStr in colors:
