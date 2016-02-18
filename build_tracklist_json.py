@@ -76,7 +76,7 @@ def readInfoFile( trackInfoStr ):
 		# (12) metadata_key_value
 		# acceptable track types: dna, genes, rnas, te, repeats, chip, rnaseq, methyl, peaks
 		trackType = lineAr[0].lower()
-		if trackType not in ['dna', 'genes', 'rnas', 'te', 'repeats', 'chip', 'rnaseq', 'methyl', 'peaks', 'atac','rnastrand']:
+		if trackType not in ['dna', 'genes', 'rnas', 'te', 'repeats', 'chip', 'rnaseq', 'methyl', 'peaks', 'atac','atacseq','rnastrand']:
 			print( 'WARNING: {:s} is not a correct track type. Skipping...'.format( lineAr[0] ) )
 			continue
 		# commas for previous track
@@ -116,7 +116,7 @@ def readInfoFile( trackInfoStr ):
 			# label, key, category, chip_type, meta
 			info = lineAr[1:5] + [ lineAr[12] ]
 			outStr += generatePeakBed( info )
-		elif trackType == 'atac':
+		elif trackType in ['atac','atacseq']:
 			# label, key, category, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:4] + [ lineAr[5] ] + lineAr[7:13]
 			outStr += generateAtacText( info )
