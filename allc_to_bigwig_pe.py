@@ -62,7 +62,7 @@ def readAllC( allCFileStr, outFileStr ):
 		# (6) methylated
 		if int( lineAr[6] ):
 			chrm = lineAr[0]
-			if chrm.isdigit():
+			if chrm.isdigit() or chrm == "C" or chrm == "L":
 				chrm = 'Chr{:s}'.format(chrm)
 			pos = int( lineAr[1] ) - 1
 			methType = decodeMethType( lineAr[3] )
