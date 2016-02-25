@@ -5,7 +5,7 @@ import sys, math, glob, multiprocessing, subprocess, os, bisect, random
 def processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRepeats, useScaffolds, useCLM, needClean ):
 	
 	print( 'Reading {:s}...'.format( gffFileStr ) )
-	header, genes, rna, te, repeats = processGFF( gffFileStr, useScaffolds, useCLM, needClean  )
+	genes, rna, te, repeats = processGFF( gffFileStr, useScaffolds, useCLM, needClean  )
 	
 	if outPre == None:
 		outBase = os.path.basename( gffFileStr )
@@ -13,28 +13,27 @@ def processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRe
 		outPre = outBase[:rInd]
 	outFileGenes = outPre + '_browser_genes.gff'
 	print( 'Writing {:s}...'.format( outFileGenes ) )
-	writeOutput( outFileGenes, header + genes )
+	writeOutput( outFileGenes, genes )
 	
 	if includeRNA:
 		outFileRNA = outPre + '_browser_rna.gff'
 		print( 'Writing {:s}...'.format( outFileRNA ) )
-		writeOutput( outFileRNA, header + rna )
+		writeOutput( outFileRNA, rna )
 		
 	if includeTransposons:
 		outFileTE = outPre + '_browser_transposons.gff'
 		print( 'Writing {:s}...'.format( outFileTE ) )
-		writeOutput( outFileTE, header + te )
+		writeOutput( outFileTE, te )
 		
 	if includeRepeats:
 		outFileRP = outPre + '_browser_repeats.gff'
 		print( 'Writing {:s}...'.format( outFileRP ) )
-		writeOutput( outFileRP, header + repeats )
+		writeOutput( outFileRP, repeats )
 	print( 'Done' )
 
 def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
 	
 	gffFile = open( gffFileStr, 'r' )
-	header = ''
 	genes = ''
 	rna = ''
 	te = ''
@@ -45,13 +44,9 @@ def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
 	writeRNA = False
 	
 	for line in gffFile:
-		# blank lines
-		if line.rstrip() == '###':
+		# headers and blank lines
+		if line.startswith( '#' ):
 			continue
-		# headers
-		elif line.startswith( '#' ):
-			header += line
-		# all other lines
 		else:
 			lineAr = line.rstrip().split('\t')
 			# GFF: (0) chrom (1) source (2) feature (3) start (4) end (5) score
@@ -106,7 +101,7 @@ def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
 				rna += line
 	# end for line
 	gffFile.close()
-	return header, genes, rna, te, repeat
+	return genes, rna, te, repeat
 
 def formatChrmName( inName, useScaffolds, useCLM, needClean ):
 	
