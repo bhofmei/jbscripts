@@ -17,7 +17,7 @@ dna: genome version, source
 bed: label, key, category, chip_type, meta
 atac-seq: bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
 
-Track File: tab separated with headers:
+Track File: tab or comma separated with headers:
 trackType label key category chip_type/meth_con/orthologs chip/meth/rna-seq_bigwig rna-seq_bam genome_version/description source_label/ggf_run source_link metadata_key_value
 '''
 
@@ -64,7 +64,11 @@ def readInfoFile( trackInfoStr ):
 				lineAr = line.rstrip().split(',')
 				version = lineAr[0].rstrip()[9:]
 			continue
-		lineAr = line.rstrip().split(',')
+		line = line.rstrip()
+		if '\t' in line:
+			lineAr = line.split( '\t' )
+		else:
+			lineAr = line.split(',')
 		if len(lineAr) < 2:
 			continue
 		# (0) trackType (1) label (2) key (3) category

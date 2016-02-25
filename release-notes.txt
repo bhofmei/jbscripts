@@ -1,0 +1,7 @@
+release_notes.txt
+
+Feb 24, 2016
+Added prepare_fasta_for_browser.py
+Fixed prepare_gff_for_browser.py to correct chrm names
+Fixed file_to_bigwig_pe.py to check chrm names based on chrm input file and sort the bed file to make bigwig conversion happy
+build_tracklist_json.py now accepts comma-separated or tab separated files

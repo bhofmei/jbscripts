@@ -1,11 +1,11 @@
 import sys, math, glob, multiprocessing, subprocess, os, bisect, random
 
-# Usage: python3.4 prepare_gff_for_browser.py [-r] [-t] [-o=output_prefix] <gff_file>
+# Usage: python prepare_gff_for_browser.py [-no-clean] [-rna] [-tps] [-rpt] [-o=output_prefix] [-no-scaf] [-no-clm] <gff_file>
 
-def processInputs( gffFileStr, outPre, includeRNA, includeTransposons ):
+def processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRepeats, useScaffolds, useCLM, needClean ):
 	
 	print( 'Reading {:s}...'.format( gffFileStr ) )
-	header, genes, rna, te = processGFF( gffFileStr )
+	header, genes, rna, te, repeats = processGFF( gffFileStr, useScaffolds, useCLM, needClean  )
 	
 	if outPre == None:
 		outBase = os.path.basename( gffFileStr )
@@ -24,15 +24,21 @@ def processInputs( gffFileStr, outPre, includeRNA, includeTransposons ):
 		outFileTE = outPre + '_browser_transposons.gff'
 		print( 'Writing {:s}...'.format( outFileTE ) )
 		writeOutput( outFileTE, header + te )
+		
+	if includeRepeats:
+		outFileRP = outPre + '_browser_repeats.gff'
+		print( 'Writing {:s}...'.format( outFileRP ) )
+		writeOutput( outFileRP, header + repeats )
 	print( 'Done' )
 
-def processGFF( gffFileStr ):
+def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
 	
 	gffFile = open( gffFileStr, 'r' )
 	header = ''
 	genes = ''
 	rna = ''
 	te = ''
+	repeat = ''
 	
 	currGeneLine = None
 	writeGene = False
@@ -53,11 +59,25 @@ def processGFF( gffFileStr ):
 			# don't want chromosomes or exons
 			if lineAr[2] in [ 'chromosome', 'exon', 'protein', 'intron' ]:
 				continue
+			# format chrm name
+			name = formatChrmName( lineAr[0], useScaffolds, useCLM, needClean )
+			#print( lineAr[0], name )
+			if name == False:	# don't include
+				continue
+			else:
+				lineAr[0] = name
+				line = '\t'.join( lineAr ) + '\n'
 			# transposons
 			if lineAr[2] in [ 'transposable_element', 'transposon_fragment', 'transposable_element_gene' ]:
 				writeGene = False
 				writeRNA = False
 				te += line
+			# repeats
+			# transposons
+			if lineAr[2]=='similarity' or 'repeat' in lineAr[2]:
+				writeGene = False
+				writeRNA = False
+				repeat += line
 			# pseudogenes
 			elif lineAr[2] in [ 'pseudogene', 'pseudogenic_transcript', 'pseudogenic_exon' ]:
 				writeGene = False
@@ -86,7 +106,42 @@ def processGFF( gffFileStr ):
 				rna += line
 	# end for line
 	gffFile.close()
-	return header, genes, rna, te
+	return header, genes, rna, te, repeat
+
+def formatChrmName( inName, useScaffolds, useCLM, needClean ):
+	
+	chrm = inName.lower()
+	if chrm == 'c' or chrm == 'chloroplast' or chrm == 'chrc':
+		if useCLM:
+			return ( 'ChrC' if needClean else chrm )
+		return False
+	elif chrm == 'm' or chrm == 'mitochondria' or chrm == 'chrm' or chrm == 'mt':
+		if useCLM:
+			return ( 'ChrM' if needClean else chrm )
+		return False
+	elif chrm == 'l' or chrm == 'lambda' or chrm == 'chrl':
+		if useCLM:
+			return ( 'ChrL' if needClean else chrm )
+		return False
+	# digit only number
+	elif chrm.isdigit():
+		return ('Chr'+chrm if needClean else chrm )
+	elif chrm.startswith( 'chromosome' ):
+		return ( chrm.replace( 'chromosome', 'Chr' ) if needClean else chrm )
+	elif chrm.startswith( 'chrm' ):
+		return ( chrm.replace( 'chrm', 'Chr' ) if needClean else chrm )
+	elif chrm.startswith( 'chr' ):
+		return ( chrm.replace( 'chr', 'Chr' ) if needClean else chrm )
+	elif chrm.startswith( 'scaffold' ):
+		if useScaffolds:
+			return chrm
+		return False
+	elif chrm.startswith( 'contig' ):
+		if useScaffolds:
+			return chrm
+		return False
+	else:
+		return chrm
 
 def writeOutput( outFileStr, outStr ):
 	outFile = open( outFileStr, 'w' )
@@ -96,37 +151,59 @@ def writeOutput( outFileStr, outStr ):
 def parseInputs( argv ):
 	includeRNA = False
 	includeTransposons = False
+	includeRepeats = False
+	useScaffolds = True
+	useCLM = True
+	needClean = True
 	outPre = None
 	startInd = 0
 	
-	for i in range(min(3,len(argv))):
-		if argv[i] == '-r':
+	for i in range(min(6,len(argv))):
+		if argv[i] == '-rna':
 			includeRNA = True
 			startInd += 1
-		elif argv[i] == '-t':
+		elif argv[i] == '-tes':
 			includeTransposons = True
+			startInd += 1
+		elif argv[i] == '-rpt':
+			includeRepeats = True
+			startInd += 1
+		elif argv[i] == '-no-clean':
+			needClean = False
 			startInd += 1
 		elif argv[i].startswith( '-o=' ):
 			outPre = argv[i][3:]
 			startInd += 1
-		elif argv[i].startswith( '-h=' ):
+		elif argv[i] == '-no-scaf' or argv[i] == '-no-scaff':
+			useScaffolds = False
+			startInd +=1
+		elif argv[i] == '-no-clm':
+			useCLM = False
+			startInd +=1
+		elif argv[i] in [ '-h', '--help', '-help']:
 			printHelp( )
 			exit()
 		elif argv[i].startswith('-'):
-			print( 'Error: {:s} is not a valid option' )
+			print( 'Error: {:s} is not a valid option'.format( argv[i] ) )
 			exit()
 	
 	gffFileStr = argv[startInd]
-	processInputs( gffFileStr, outPre, includeRNA, includeTransposons )
+	processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRepeats, useScaffolds, useCLM, needClean  )
 			
 def printHelp():
-	print ("Usage: python3 prepare_gff_for_browser.py [-r] [-t] [-o=output_prefix] <gff_file>")
+	print ("Usage: python prepare_gff_for_browser.py [-rna] [-tes] [-rpt] [-o=output_prefix] [-no-scaf] [-no-clm] <gff_file>")
 	print( 'Converts an existing GFF file to be optimum for JBrowse' )
+	print( 'Additionally correct chromosome naming scheme to be consistent' )
 	print( 'Required:' )
 	print( 'gff_file\tGFF formatted file to be processed' )
 	print( 'Optional:' )
-	print( '-r\tGFF file has non-coding RNA annotated; writes these to a separate file' )
-	print( '-t\tGFF file has transposons annotated; writes these to a separate file' )
+	print( '-rna\tGFF file has non-coding RNA annotated; writes these to a separate file' )
+	print( '-tes\tGFF file has transposons annotated; writes these to a separate file' )
+	print( '-rpt\tGFF file has repeats (similarity) annotated; writes these to a separate file' )
+	print( '-no-clean\tdo not rename chromosomes; not recommended' )
+	print( '-no-scaf\tdoes not include scaffolds/contigs in the output' )
+	print( '\t\tuse when majority of DNA is in chromosomes' )
+	print( '-no-clm\tdo not inlclude chroloplast, mitochondria, and lambda in output' )
 	print( '-o=out_prefix\tprefix for output GFF file(s) [default: GFF file name' )
 
 if __name__ == "__main__":
