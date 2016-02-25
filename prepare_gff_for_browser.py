@@ -1,6 +1,6 @@
 import sys, math, glob, multiprocessing, subprocess, os, bisect, random
 
-# Usage: python prepare_gff_for_browser.py [-no-clean] [-rna] [-tps] [-rpt] [-o=output_prefix] [-no-scaf] [-no-clm] <gff_file>
+# Usage: python prepare_gff_for_browser.py [-no-clean] [-rna] [-tes] [-rpt] [-o=output_prefix] [-no-scaf] [-no-clm] <gff_file>
 
 def processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRepeats, useScaffolds, useCLM, needClean ):
 	

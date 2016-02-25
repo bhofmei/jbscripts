@@ -144,9 +144,9 @@ def writeOutput( outFileStr, chrmDict, scafDict, clmDict ):
 	nChrm = len(chrmDict.keys())
 	nScaf = len( scafDict.keys())
 	#nClm = len( clmDict.keys() )
-	print( sorted(list(chrmDict.keys())))
-	print( sorted(list(scafDict.keys())))
-	print( sorted(list(clmDict.keys())))
+	#print( sorted(list(chrmDict.keys())))
+	#print( sorted(list(scafDict.keys())))
+	#print( sorted(list(clmDict.keys())))
 	if nChrm > 0:
 		# chrm
 		for digit in sorted( chrmDict.keys() ):

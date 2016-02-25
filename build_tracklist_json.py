@@ -72,15 +72,15 @@ def readInfoFile( trackInfoStr ):
 		if len(lineAr) < 2:
 			continue
 		# (0) trackType (1) label (2) key (3) category
-		# (4) chip_type/orthologs
-		# (5) chip/meth/rna-seq_bigwig (6) rna-seq_bam
+		# (4) chip_type/orthologs/reads_type
+		# (5) chip/meth/rna-seq_bigwig (6) reads/rna-seq_bam
 		# (7) genome_version/description
 		# (8) source_label/ggf_run (9) source_link
 		# (10) mapping_rate (11) percent_remaining
 		# (12) metadata_key_value
 		# acceptable track types: dna, genes, rnas, te, repeats, chip, rnaseq, methyl, peaks
 		trackType = lineAr[0].lower()
-		if trackType not in ['dna', 'genes', 'rnas', 'te', 'repeats', 'chip', 'rnaseq', 'methyl', 'peaks', 'atac','atacseq','rnastrand']:
+		if trackType not in ['dna', 'genes', 'rnas', 'te', 'repeats', 'chip', 'rnaseq', 'methyl', 'peaks', 'atac','atacseq','reads','read','rnastrand']:
 			print( 'WARNING: {:s} is not a correct track type. Skipping...'.format( lineAr[0] ) )
 			continue
 		# commas for previous track
@@ -107,6 +107,10 @@ def readInfoFile( trackInfoStr ):
 			# label, key, category, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:6] + lineAr[7:13]
 			outStr += generateChipText( info )
+		elif trackType in ['reads','read']:
+			# label, key, category, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:5] + lineAr[6:13]
+			outStr += generateReadsText( info )
 		elif trackType == 'rnaseq':
 			# label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:13]
@@ -386,6 +390,25 @@ def generateRnaSeqText( infoAr ):
 	outStr += tab(2) + '}'
 	return outStr
 
+def generateReadsText( infoAr ):
+	'''
+	label, key, category, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
+	'''
+	label, key, category, folder, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	outStr = tab(2) + '{\n'
+	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
+	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
+	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BAM",\n'
+	outStr += tab(3) + '"maxHeight" : 500,\n'
+	outStr += tab(3) + '"urlTemplate" : "raw/{:s}/{:s}",\n'.format( folder, bam )
+	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
+	outStr += tab(3) + '"type" : "JBrowse/View/Track/Alignments2",\n'
+	outStr += tab(3) + '"glyph" : "JBrowse/View/FeatureGlyph/Alignment",\n'
+	outStr += tab(3) + '"maxFeatureSizeForUnderlyingRefSeq" : 250000\n'
+	outStr += tab(2) + '}'
+	return outStr
+
 def parseMetaKeys( metaStr ):
 	if metaStr == "":
 		return '\n'
@@ -437,7 +460,7 @@ def generateAtacText( infoAr ):
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	outStr += tab(3) + '"style" : {\n'
 	outStr += tab(4) + '"clip_marker_color" : "black",\n'
-	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( 'gray' )
+	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( 'gray24' )
 	outStr += tab(4) + '"height" : 50\n'
 	outStr += tab(3) + '},\n'
 	outStr += tab(3) + '"variance_band" : false,\n'
