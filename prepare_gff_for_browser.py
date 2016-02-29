@@ -203,11 +203,12 @@ def printHelp():
 	print( 'Optional:' )
 	print( '-rna\tGFF file has non-coding RNA annotated; writes these to a separate file' )
 	print( '-tes\tGFF file has transposons annotated; writes these to a separate file' )
-	print( '-rpt\tGFF file has repeats (similarity) annotated; writes these to a separate file' )
+	print( '-rpt\tGFF file has repeats annotated; writes these to a separate file' )
+	print( '\t\trepeat is considered "similarity" or "RM"' )
 	print( '-no-clean\tdo not rename chromosomes; not recommended' )
 	print( '-no-scaf\tdoes not include scaffolds/contigs in the output' )
 	print( '\t\tuse when majority of DNA is in chromosomes' )
-	print( '-no-clm\tdo not inlclude chroloplast, mitochondria, and lambda in output' )
+	print( '-no-clm\t\tdo not inlclude chroloplast, mitochondria, lambda, and\n\t\tnon-digit chrms in output' )
 	print( '-o=out_prefix\tprefix for output GFF file(s) [default: GFF file name' )
 
 if __name__ == "__main__":

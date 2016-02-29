@@ -49,15 +49,15 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList ):
 			#print( chrm )
 			if chrm == 'c' or chrm == 'chloroplast' or chrm == 'chrc':
 				curInfo = '>ChrC ' + ' '.join( lineAr[1:] ) + '\n'
-				curDigit = 1
+				curDigit = 'c'
 				curType = 'clm'
 			elif chrm == 'm' or chrm == 'mitochondria'or chrm == 'chrm' or chrm=='mt':
 				curInfo = '>ChrM ' + ' '.join( lineAr[1:] ) + '\n'
-				curDigit = 2
+				curDigit = 'm'
 				curType = 'clm'
 			elif chrm == 'l' or chrm == 'lambda' or chrm == 'chrl':
 				curInfo = '>ChrL ' + ' '.join( lineAr[1:] ) + '\n'
-				curDigit = 3
+				curDigit = 'l'
 				curType = 'clm'
 			# digit only number
 			elif chrm.isdigit():
@@ -66,44 +66,50 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList ):
 				curType = 'chrm'
 			# begins chr or Chr
 			elif chrm.startswith( 'chr' ):
+				curType = 'chrm'
 				if chrm.startswith( 'chromosome0' ):
 					try:
 						curDigit = int( chrm.replace('chromosome0','') )
 					except ValueError:
 						curDigit = chrm.replace('chromosome0', '')
+						curType = 'clm'
 					chrm = chrm.replace( 'chromosome0', 'Chr' )
 				elif chrm.startswith( 'chromosome' ):
 					try:
 						curDigit = int( chrm.replace('chromosome','') )
 					except ValueError:
 						curDigit = chrm.replace('chromosome', '')
+						curType = 'clm'
 					chrm = chrm.replace( 'chromosome', 'Chr' )
 				elif chrm.startswith( 'chrm0' ):
 					try:
 						curDigit = int( chrm.replace('chrm0','') )
 					except ValueError:
 						curDigit = chrm.replace('chrm0', '')
+						curType = 'clm'
 					chrm = chrm.replace( 'chrm0', 'Chr' )
 				elif chrm.startswith( 'chrm' ):
 					try:
 						curDigit = int( chrm.replace('chrm','') )
 					except ValueError:
 						curDigit = chrm.replace('chrm', '')
+						curType = 'clm'
 					chrm = chrm.replace( 'chrm', 'Chr' )
 				elif chrm.startswith( 'chr0' ):
 					try:
 						curDigit = int( chrm.replace('chr0','') )
 					except ValueError:
 						curDigit = chrm.replace('chr0', '')
+						curType = 'clm'
 					chrm = chrm.replace( 'chr0', 'Chr' )
 				else:
 					try:
 						curDigit = int( chrm.replace('chr','') )
 					except ValueError:
 						curDigit = chrm.replace('chr', '')
+						curType = 'clm'
 					chrm = chrm.replace( 'chr', 'Chr' )
 				curInfo = '>'+chrm+' '+' '.join( lineAr[1:] )+ '\n'
-				curType = 'chrm'
 			elif chrm.startswith( 'scaffold' ):
 				try:
 					curDigit = int( chrm.replace('scaffold','').replace('_','').replace('-','') )
@@ -122,7 +128,7 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList ):
 				print( 'Unknown type', chrm )
 				curDigit = chrm
 				curInfo = '>'+chrm+' '+' '.join( lineAr[1:] ) + '\n'
-				curType = 'chrm'
+				curType = 'clm'
 			
 			# check types vs ones we want to include
 			if includes and lineAr[0][1:] in includeList:
@@ -163,7 +169,7 @@ def writeOutput( outFileStr, chrmDict, scafDict, clmDict ):
 	nChrm = len(chrmDict.keys())
 	nScaf = len( scafDict.keys())
 	#nClm = len( clmDict.keys() )
-	#print( sorted(list(chrmDict.keys())))
+	#print( list(chrmDict.keys()))
 	#print( sorted(list(scafDict.keys())))
 	#print( sorted(list(clmDict.keys())))
 	if nChrm > 0:
@@ -217,8 +223,8 @@ def printHelp():
 	print ( 'Optional:' )
 	print( '-no-scaf\tdoes not include scaffolds/contigs in the output' )
 	print( '\t\tuse when majority of DNA is in chromosomes' )
-	print( '-no-clm\tdo not inlclude chroloplast, mitochondria, and lambda in output' )
-	print( '-i=chrm_list\twhen specified, only includes these chromsomes in output; comma-separated list' )
+	print( '-no-clm\t\tdo not inlclude chroloplast, mitochondria, lambda,\n\t\tand other non-digit chrms in output' )
+	print( '-i=chrm_list\twhen specified, only includes these chromsomes in output\n\t\tcomma-separated list' )
 	print( '\t\tchromosome names must exactly match those in input fasta' )
 	
 if __name__ == "__main__":
