@@ -15,6 +15,7 @@ def processInputs( fastaFileStr, useScaffolds, useCLM, includeList ):
 		print( 'Include list: {:s}'.format( ', '.join( includeList) ) )
 	
 	chrmDict, scafDict, clmDict = readFasta( fastaFileStr, useScaffolds, useCLM, includeList )
+	print( 'Writing output to', outFileStr )
 	writeOutput( outFileStr, chrmDict, scafDict, clmDict )
 	print( 'Done' )
 
@@ -65,18 +66,36 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList ):
 				curType = 'chrm'
 			# begins chr or Chr
 			elif chrm.startswith( 'chr' ):
-				if 	chrm.startswith( 'chromosome' ):
+				if chrm.startswith( 'chromosome0' ):
+					try:
+						curDigit = int( chrm.replace('chromosome0','') )
+					except ValueError:
+						curDigit = chrm.replace('chromosome0', '')
+					chrm = chrm.replace( 'chromosome0', 'Chr' )
+				elif chrm.startswith( 'chromosome' ):
 					try:
 						curDigit = int( chrm.replace('chromosome','') )
 					except ValueError:
 						curDigit = chrm.replace('chromosome', '')
 					chrm = chrm.replace( 'chromosome', 'Chr' )
+				elif chrm.startswith( 'chrm0' ):
+					try:
+						curDigit = int( chrm.replace('chrm0','') )
+					except ValueError:
+						curDigit = chrm.replace('chrm0', '')
+					chrm = chrm.replace( 'chrm0', 'Chr' )
 				elif chrm.startswith( 'chrm' ):
 					try:
 						curDigit = int( chrm.replace('chrm','') )
 					except ValueError:
 						curDigit = chrm.replace('chrm', '')
 					chrm = chrm.replace( 'chrm', 'Chr' )
+				elif chrm.startswith( 'chr0' ):
+					try:
+						curDigit = int( chrm.replace('chr0','') )
+					except ValueError:
+						curDigit = chrm.replace('chr0', '')
+					chrm = chrm.replace( 'chr0', 'Chr' )
 				else:
 					try:
 						curDigit = int( chrm.replace('chr','') )

@@ -121,12 +121,21 @@ def formatChrmName( inName, useScaffolds, useCLM, needClean ):
 	# digit only number
 	elif chrm.isdigit():
 		return ('Chr'+chrm if needClean else chrm )
-	elif chrm.startswith( 'chromosome' ):
-		return ( chrm.replace( 'chromosome', 'Chr' ) if needClean else chrm )
-	elif chrm.startswith( 'chrm' ):
-		return ( chrm.replace( 'chrm', 'Chr' ) if needClean else chrm )
-	elif chrm.startswith( 'chr' ):
-		return ( chrm.replace( 'chr', 'Chr' ) if needClean else chrm )
+	elif chrm.startswith('chr') and needClean == False:
+		return chrm
+	elif chrm.startswith('chr'):
+		if chrm.startswith( 'chromosome0' ):
+			return chrm.replace( 'chromosome0', 'Chr' )
+		elif chrm.startswith( 'chromosome' ):
+			return chrm.replace( 'chromosome', 'Chr' )
+		elif chrm.startswith( 'chrm0' ):
+			return chrm.replace( 'chrm0', 'Chr' )
+		elif chrm.startswith( 'chrm' ):
+			return chrm.replace( 'chrm', 'Chr' )
+		elif chrm.startswith( 'chr0' ):
+			return chrm.replace( 'chr0', 'Chr' )
+		elif chrm.startswith( 'chr' ):
+			return chrm.replace( 'chr', 'Chr' )
 	elif chrm.startswith( 'scaffold' ):
 		if useScaffolds:
 			return chrm
