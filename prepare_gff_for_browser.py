@@ -69,7 +69,7 @@ def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
 				te += line
 			# repeats
 			# transposons
-			if lineAr[2]=='similarity' or 'repeat' in lineAr[2]:
+			if lineAr[2] in ['similarity','RM'] or 'repeat' in lineAr[2]:
 				writeGene = False
 				writeRNA = False
 				repeat += line
