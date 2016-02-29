@@ -275,14 +275,15 @@ def parseInputs( argv ):
 	
 def printHelp():
 	print ("Usage: python3 file_to_bigwig_pe.py [-keep] [-no-clean] [-strand] [-scale] [-union] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*")
-	print( 'Note: bedtools and bedGraphToBigWig programs must be in the path' )
+	print( 'Convert BED/BAM file to bigWig format for coverage view' )
+	print( 'Note: bedtools, bedGraphToBigWig, and bedSort programs must be in the path' )
 	print( 'Required:' )
-	print( 'chrm_file\ttab-delimited file with chromosome names and lengths, i.e. fasta index file' )
+	print( 'chrm_file\ttab-delimited file with chromosome names and lengths\n\t\ti.e. fasta index file' )
 	print( 'bam_file\tbam file that already has been indexed, i.e. file.bam.bai' )
 	print( 'bed_file\tBED formatted file' )
 	print( 'Optional:' )
 	print( '-keep\t\tkeep intermediate files' )
-	print( '-no-clean\tdoes not check chromosome names match chrm file\n\t\tnot recommended\n' )
+	print( '-no-clean\tdoes not check chromosome names match chrm file\n\t\tnot recommended' )
 	print( '-strand\t\tseparate reads by strand to have strand-specific bigwig files' )
 	print( '-scale\t\tscale the bigwig values by total number of reads in file' )
 	print( '-union\t\tused with strand, add stand-specific values for one bigwig file' )

@@ -1,5 +1,8 @@
 release_notes.txt
 
+Feb 28, 2016
+prepare_fasta_for_browser.py and prepare_gff_for_browser.py now remove unnecessary 0 in chrm names and groups non-digit named charms (i.e. Mt or Sy) with clm-type
+
 Feb 24, 2016
 Added prepare_fasta_for_browser.py
 Fixed prepare_gff_for_browser.py to correct chrm names

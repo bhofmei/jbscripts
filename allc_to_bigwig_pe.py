@@ -211,10 +211,21 @@ def parseInputs( argv ):
 	processInputs( allCFileAr, chrmFileStr, keepTmp, labelsAr, outID, numProc, needClean )
 
 def printHelp():
-	print( '-no-clean\tdoes not check chromosome names match chrm file\n\t\tnot recommended\n' )
+	print ("Usage: python3 allc_to_bigwig_pe.py [-keep] [-no-clean] [-L=labels] [-o=outID] [-p=num_proc] <chrm_file>  <allC_file> [allC_file]*")
+	print( 'Converts allC files to BigWig file with context-specific values' )
+	print( 'Note: bedGraphToBigWig and bedSort programs must be in the path' )
+	print( 'Required:' )
+	print( 'chrm_file\ttab-delimited file with chromosome names and lengths,\n\t\ti.e. fasta index file' )
+	print( 'allc_file\tallc file with all chrms and contexts' )
+	print( 'Optional:' )
+	print( '-keep\t\tkeep intermediate files' )
+	print( '-no-clean\tdoes not check chromosome names match chrm file;\n\t\tnot recommended' )
+	print( '-l=labels\tcomma-separated list of labels to use for the allC files;\n\t\tdefaults to using information from the allc file name' )
+	print( '-o=out_id\toptional identifier to be added to the output file names' )
+	print( '-p=num_proc\tnumber of processors to use [default 1]' )
 	
 if __name__ == "__main__":
 	if len(sys.argv) < 3 :
-		print ("Usage: python3 allc_to_bigwig_pe.py [-keep] [-L=labels] [-o=outID] [-p=num_proc] <chrm_sizes>  <allC_file> [allC_file]*")
+		printHelp()
 	else:
 		parseInputs( sys.argv[1:] )
