@@ -1,5 +1,4 @@
 import sys, math, glob, multiprocessing, subprocess, os, bisect, random
-from bioFiles import *
 
 # Usage: file_to_bigwig_pe.py [-keep] [-no-clean] [-strand] [-scale] [-union] [-p=num_proc]  <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*
 
