@@ -182,7 +182,17 @@ def writeOutput( outFileStr, chrmDict, scafDict, clmDict ):
 			outFile.write( scafDict[digit] )
 	else:
 		# scaf
-		for digit in sorted( scafDict.keys() ):
+		digAr = []
+		strAr = []
+		for key in scafDict.keys():
+			try:
+				int(key)
+				digAr += [ key ]
+			except ValueError:
+				strAr += [ key ]
+		for digit in sorted( digAr ):
+			outFile.write( scafDict[digit] )
+		for digit in sorted( strAr ):
 			outFile.write( scafDict[digit] )
 		for digit in sorted( clmDict.keys() ):
 			outFile.write( clmDict[digit] )
