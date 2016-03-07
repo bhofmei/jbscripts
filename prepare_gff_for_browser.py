@@ -49,6 +49,8 @@ def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
 			continue
 		else:
 			lineAr = line.rstrip().split('\t')
+			if len(lineAr) < 8:
+				continue
 			# GFF: (0) chrom (1) source (2) feature (3) start (4) end (5) score
 			# (6) strand (7) frame/phase (8) attributes
 			# don't want chromosomes or exons
