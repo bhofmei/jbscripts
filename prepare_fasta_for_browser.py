@@ -4,23 +4,45 @@ import sys, math, glob, multiprocessing, subprocess, os, bisect, random
 # formats the chromosome naming so it is consistent across the browser
 # removes scaffolds if necessary; renames chloroplast, mitochondria, lambda
 
-def processInputs( fastaFileStr, useScaffolds, useCLM, includeList ):
+def processInputs( fastaFileStr, useScaffolds, useCLM, includeList, excludeList ):
 	fileName = os.path.basename( fastaFileStr )
 	fileDir = os.path.dirname( fastaFileStr )
 	rInd = fileName.rfind( '.' )
 	outName = fileName[:rInd] + '_browser.fa'
 	outFileStr = os.path.join( fileDir,  outName )
 	print( 'FASTA file: {:s}\nOutput file: {:s}\nRemove scaffolds: {:s}\nRemove CLM: {:s}'.format( fileName, outName, str( (not useScaffolds) ), str( (not useCLM) ) ) )
-	if includeList != None:
-		print( 'Include list: {:s}'.format( ', '.join( includeList) ) )
 	
-	chrmDict, scafDict, clmDict = readFasta( fastaFileStr, useScaffolds, useCLM, includeList )
+	inex = checkIncludeExclude( includeList, excludeList )
+	if inex == False:
+		exit()
+	
+	chrmDict, scafDict, clmDict = readFasta( fastaFileStr, useScaffolds, useCLM, includeList, excludeList )
 	print( 'Writing output to', outFileStr )
 	writeOutput( outFileStr, chrmDict, scafDict, clmDict )
 	print( 'Done' )
 
-def readFasta( fastaFileStr, useScaffolds, useCLM, includeList ):
+def checkIncludeExclude( includeList, excludeList ):
+	if includeList == None and excludeList == None:
+		return True
+	elif excludeList == None:	# include only
+		print( 'Include list: {:s}'.format( ', '.join( includeList) ) )
+		return True
+	elif includeList == None:	# exclude only
+		print( 'Exclude list: {:s}'.format( ', '.join( excludeList) ) )
+		return True
+	else:	# both specified
+		for i in includeList:
+			if i in excludeList:
+				print( 'ERROR: {:s} is in include list and exclude list'.format( i) )
+				return False
+		print( 'Include list: {:s}'.format( ', '.join( includeList) ) )
+		print( 'Exclude list: {:s}'.format( ', '.join( excludeList) ) )
+		return True
+	
+
+def readFasta( fastaFileStr, useScaffolds, useCLM, includeList, excludeList ):
 	includes = ( includeList != None )
+	excludes = ( excludeList != None )
 	fastaFile = open( fastaFileStr, 'r' )
 	chrmDict = {}
 	scafDict = {}
@@ -124,6 +146,13 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList ):
 					curDigit = chrm.replace('contig', '').replace('_','').replace('-','')
 				curInfo = '>'+chrm+' '+' '.join( lineAr[1:] ) + '\n'
 				curType = 'scaf'
+			elif chrm.startswith( 'pseudo' ):
+				try:
+					curDigit = int( chrm.replace('pseudo','').replace('_','').replace('-','') )
+				except ValueError:
+					curDigit = chrm.replace('pseudo', '').replace('_','').replace('-','')
+				curInfo = '>'+chrm+' '+' '.join( lineAr[1:] ) + '\n'
+				curType = 'scaf'
 			else:
 				print( 'Unknown type', chrm )
 				curDigit = chrm
@@ -133,6 +162,8 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList ):
 			# check types vs ones we want to include
 			if includes and lineAr[0][1:] in includeList:
 				getSeq = True
+			elif excludes and lineAr[0][1:] in excludeList:
+				getSeq = False
 			# check scaffolds
 			elif curType == 'scaf' and useScaffolds:
 				getSeq = True
@@ -202,9 +233,10 @@ def parseInputs( argv ):
 	useScaffolds = True
 	useCLM = True
 	includeList = None
+	excludeList = None
 	startInd = 0
 	
-	for i in range(min(3,len(argv))):
+	for i in range(min(4,len(argv))):
 		if argv[i] == '-no-scaf' or argv[i] == '-no-scaff':
 			useScaffolds = False
 			startInd +=1
@@ -214,6 +246,9 @@ def parseInputs( argv ):
 		elif argv[i].startswith( '-i=' ):
 			includeList = argv[i][3:].split( ',' )
 			startInd += 1
+		elif argv[i].startswith( '-x=' ):
+			excludeList = argv[i][3:].split( ',' )
+			startInd += 1
 		elif argv[i] in [ '-h', '--help', '-help']:
 			printHelp()
 			exit()
@@ -222,7 +257,7 @@ def parseInputs( argv ):
 			exit()
 	# end for
 	fastaFileStr = argv[startInd]
-	processInputs( fastaFileStr, useScaffolds, useCLM, includeList )
+	processInputs( fastaFileStr, useScaffolds, useCLM, includeList, excludeList )
 
 
 def printHelp():
@@ -235,6 +270,7 @@ def printHelp():
 	print( '\t\tuse when majority of DNA is in chromosomes' )
 	print( '-no-clm\t\tdo not inlclude chroloplast, mitochondria, lambda,\n\t\tand other non-digit chrms in output' )
 	print( '-i=chrm_list\twhen specified, only includes these chromsomes in output\n\t\tcomma-separated list' )
+	print( '-x=chrm_list\twhen specified, excludes these chromsomes in output\n\t\tcomma-separated list' )
 	print( '\t\tchromosome names must exactly match those in input fasta' )
 	
 if __name__ == "__main__":
