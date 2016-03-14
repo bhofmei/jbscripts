@@ -9,7 +9,8 @@ info needed for
 All: label, key, category
 ChIP: modification type, path/file name, ggf run, desciption
 Methylation: context, path/file name, description, method
-RNA-seq: path bigwig, path bam, metadata (ecotype, ggf run, source, description)
+RNA-seq: path bigwig, path bam, metadata (ecotype, ggf run, source, description)'
+smRNA-seq: (path bigwig), path bam, medata, (ecotype, ggf run, source, description)
 genes: orthologs, genome version, source
 rnas: genome version, source
 tes: genome version, source
@@ -80,7 +81,7 @@ def readInfoFile( trackInfoStr ):
 		# (12) metadata_key_value
 		# acceptable track types: dna, genes, rnas, te, repeats, chip, rnaseq, methyl, peaks
 		trackType = lineAr[0].lower()
-		if trackType not in ['dna', 'genes', 'rnas', 'te', 'repeats', 'chip', 'rnaseq', 'methyl', 'peaks', 'atac','atacseq','reads','read','rnastrand']:
+		if trackType not in ['dna', 'genes', 'rnas', 'te', 'tes', 'transposons', 'repeats', 'chip', 'rnaseq', 'smrna','smrnaseq','methyl', 'peaks', 'atac', 'atacseq', 'reads', 'read', 'rnastrand']:
 			print( 'WARNING: {:s} is not a correct track type. Skipping...'.format( lineAr[0] ) )
 			continue
 		# commas for previous track
@@ -98,7 +99,7 @@ def readInfoFile( trackInfoStr ):
 			info = lineAr[1:5] + lineAr[7:10]
 			outStr += generateGeneText( info )
 			
-		elif trackType in ['rnas', 'te', 'repeats']:
+		elif trackType in ['rnas', 'te', 'tes', 'transposons', 'repeats']:
 			#label, key, category, genome_version, source_label, source_link
 			info = lineAr[1:4] + lineAr[7:10]
 			outStr += generateRnaTeText( info )
@@ -115,6 +116,10 @@ def readInfoFile( trackInfoStr ):
 			# label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:13]
 			outStr += generateRnaSeqText( info )
+		elif trackType in ['smrna','smrnaseq']:
+			# label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:4] + lineAr[5:13]
+			outStr += generateSmRnaSeqText( info )
 		elif trackType == 'methyl':
 			# label, key, category, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
 			''' info = lineAr[1:6] + lineAr[7:10] + [ lineAr[12] ] '''
@@ -387,6 +392,34 @@ def generateRnaSeqText( infoAr ):
 	outStr += tab(3) + '"type" : "JBrowse/View/Track/Alignments2",\n'
 	outStr += tab(3) + '"glyph" : "JBrowse/View/FeatureGlyph/Alignment",\n'
 	outStr += tab(3) + '"maxFeatureSizeForUnderlyingRefSeq" : 250000\n'
+	outStr += tab(2) + '}'
+	return outStr
+
+def generateSmRnaSeqText( infoAr ):
+	'''
+		infoAr = [label, key, category, bigwig, bam, description, source/ggf_run, source_link, meta]
+	'''
+	label, key, category, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	outStr = tab(2) + '{\n'
+	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
+	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	# histograms
+	if bigWig != '':
+		outStr += tab(3) + '"histograms" : {\n'
+		outStr += tab(4) + '"color" : "#d1d1d1",\n'
+		outStr += tab(4) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
+		outStr += tab(4) + '"urlTemplate" : "raw/smrna/{:s}",\n'.format( bigWig )
+		outStr += tab(4) + '"description" : "coverage depth",\n'
+		outStr += tab(4) + '"height" : 100\n'
+		outStr += tab(3) + '},\n'
+	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
+	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BAM",\n'
+	outStr += tab(3) + '"maxFeatureScreenDensity" : 1.5,\n'
+	outStr += tab(3) + '"maxHeight" : 500,\n'
+	outStr += tab(3) + '"urlTemplate" : "raw/smrna/{:s}",\n'.format( bam )
+	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
+	outStr += tab(3) + '"type" : "SmallRNAPlugin/View/Track/smAlignments",\n'
+	outStr += tab(3) + '"maxFeatureSizeForUnderlyingRefSeq" : 500000\n'
 	outStr += tab(2) + '}'
 	return outStr
 
