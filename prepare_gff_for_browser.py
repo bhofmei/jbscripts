@@ -142,6 +142,10 @@ def formatChrmName( inName, useScaffolds, useCLM, needClean ):
 		if useScaffolds:
 			return chrm
 		return False
+	elif chrm.startswith( 'unanchored' ):
+		if useScaffolds:
+			return chrm
+		return False
 	elif chrm.startswith( 'contig' ):
 		if useScaffolds:
 			return chrm

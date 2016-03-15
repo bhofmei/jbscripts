@@ -153,6 +153,13 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList, excludeList ):
 					curDigit = chrm.replace('pseudo', '').replace('_','').replace('-','')
 				curInfo = '>'+chrm+' '+' '.join( lineAr[1:] ) + '\n'
 				curType = 'scaf'
+			elif chrm.startswith( 'unanchored' ):
+				try:
+					curDigit = int( chrm.replace('pseudo','').replace('_','').replace('-','') )
+				except ValueError:
+					curDigit = chrm.replace('unanchored', '').replace('_','').replace('-','')
+				curInfo = '>'+chrm+' '+' '.join( lineAr[1:] ) + '\n'
+				curType = 'scaf'
 			else:
 				print( 'Unknown type', chrm )
 				curDigit = chrm
@@ -189,9 +196,19 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList, excludeList ):
 
 def addToDict( inDict, curInfo, curDigit, label ):
 	# test
+	if curDigit == '':
+		curDigit = 0
 	if inDict.get(curDigit) != None:
 		print( 'WARNING: already entry for {:s} in {:s} dict'.format( str(curDigit), label ) )
-		return inDict
+		tmp = 0
+		tmpDigit = curDigit
+		while inDict.get(tmpDigit) != None:
+			tmp += 1
+			try:
+				tmpDigit = curDigit + (tmp / 10**(math.floor(math.log10(tmp)+1)))
+			except ValueError:
+				tmpDigit = curDigit + '.' + str(tmp)
+		curDigit = tmpDigit
 	inDict[curDigit] = curInfo
 	return inDict
 
