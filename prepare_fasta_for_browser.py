@@ -1,4 +1,4 @@
-import sys, math, glob, multiprocessing, subprocess, os, bisect, random
+import sys, os
 
 # Usage: python3 prepare_fasta_for_browser.py [-no-scaf] [-no-clm] [-i=chrm_list] <fasta_file>
 # formats the chromosome naming so it is consistent across the browser
@@ -131,6 +131,8 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList, excludeList ):
 						curDigit = chrm.replace('chr', '')
 						curType = 'clm'
 					chrm = chrm.replace( 'chr', 'Chr' )
+				# remove _ and -
+				chrm = chrm.replace('_','').replace('-')
 				curInfo = '>'+chrm+' '+' '.join( lineAr[1:] )+ '\n'
 			elif chrm.startswith( 'scaffold' ):
 				try:
