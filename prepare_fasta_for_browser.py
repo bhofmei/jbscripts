@@ -132,7 +132,7 @@ def readFasta( fastaFileStr, useScaffolds, useCLM, includeList, excludeList ):
 						curType = 'clm'
 					chrm = chrm.replace( 'chr', 'Chr' )
 				# remove _ and -
-				chrm = chrm.replace('_','').replace('-')
+				chrm = chrm.replace('_','').replace('-','')
 				curInfo = '>'+chrm+' '+' '.join( lineAr[1:] )+ '\n'
 			elif chrm.startswith( 'scaffold' ):
 				try:
