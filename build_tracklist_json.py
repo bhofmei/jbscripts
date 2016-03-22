@@ -1,4 +1,4 @@
-import sys, math, glob, multiprocessing, subprocess, os, bisect, random
+import sys, os
 from io import open
 
 # Usage: python build_tracklist_json.py <track_info_file>
@@ -118,7 +118,7 @@ def readInfoFile( trackInfoStr ):
 			outStr += generateRnaSeqText( info )
 		elif trackType in ['smrna','smrnaseq']:
 			# label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:4] + lineAr[5:13]
+			info = lineAr[1:13]
 			outStr += generateSmRnaSeqText( info )
 		elif trackType == 'methyl':
 			# label, key, category, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
@@ -386,7 +386,7 @@ def generateRnaSeqText( infoAr ):
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BAM",\n'
 	outStr += tab(3) + '"maxFeatureScreenDensity" : 2,\n'
-	outStr += tab(3) + '"maxHeight" : 500,\n'
+	outStr += tab(3) + '"maxHeight" : 400,\n'
 	outStr += tab(3) + '"urlTemplate" : "raw/rna/{:s}",\n'.format( bam )
 	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
 	outStr += tab(3) + '"type" : "JBrowse/View/Track/Alignments2",\n'
@@ -397,9 +397,9 @@ def generateRnaSeqText( infoAr ):
 
 def generateSmRnaSeqText( infoAr ):
 	'''
-		infoAr = [label, key, category, bigwig, bam, description, source/ggf_run, source_link, meta]
+		infoAr = [label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, meta]
 	'''
-	label, key, category, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
@@ -407,6 +407,8 @@ def generateSmRnaSeqText( infoAr ):
 	if bigWig != '':
 		outStr += tab(3) + '"histograms" : {\n'
 		outStr += tab(4) + '"color" : "#d1d1d1",\n'
+		if height != "":
+			outStr += tab(4) + '"max" : {:s},\n'.format( height )
 		outStr += tab(4) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
 		outStr += tab(4) + '"urlTemplate" : "raw/smrna/{:s}",\n'.format( bigWig )
 		outStr += tab(4) + '"description" : "coverage depth",\n'
@@ -415,7 +417,7 @@ def generateSmRnaSeqText( infoAr ):
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BAM",\n'
 	outStr += tab(3) + '"maxFeatureScreenDensity" : 1.5,\n'
-	outStr += tab(3) + '"maxHeight" : 500,\n'
+	outStr += tab(3) + '"maxHeight" : 400,\n'
 	outStr += tab(3) + '"urlTemplate" : "raw/smrna/{:s}",\n'.format( bam )
 	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
 	outStr += tab(3) + '"type" : "SmallRNAPlugin/View/Track/smAlignments",\n'
