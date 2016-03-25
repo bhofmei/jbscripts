@@ -70,9 +70,11 @@ def readAllC( allCFileStr, outFileStr, chrmList ):
 	
 	mTypes = [ 'CG', 'CHG', 'CHH' ]
 	mTypeAdd = [0, 1, 2]
+	isFirst = True
 	
 	for line in allCFile:
-		if line.startswith( 'c' ):
+		if line.startswith( 'c' ) and isFirst:
+			isFirst = False
 			continue
 		lineAr = line.rstrip().split('\t')
 		# (0) chr (1) pos (2) strand (3) mc class (4) mc_count (5) total
