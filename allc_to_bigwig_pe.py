@@ -51,7 +51,7 @@ def processFile( allCFileStr, chrmFileStr, chrmList, label, outID, keepTmp ):
 	readAllC( allCFileStr, bedGraphStr, chrmList )
 	
 	print( 'Sorting bedGraph file' )
-	sortBedFile( bedGraphStr )
+	#sortBedFile( bedGraphStr )
 	
 	print( 'Converting {:s} file to BigWig'.format(bedGraphStr ) )
 	# bedGraph to bigWig
@@ -81,11 +81,12 @@ def readAllC( allCFileStr, outFileStr, chrmList ):
 		# (6) methylated
 		if int( lineAr[6] ):
 			chrm = lineAr[0]
-			name = formatChrmName( chrm )
-			if chrmList == None or name == False or name not in chrmList:
-				continue
-			else:
-				chrm = name
+			if chrmList != None:
+				name = formatChrmName( chrm )
+				if name == False or name not in chrmList:
+					continue
+				else:
+					chrm = name
 			pos = int( lineAr[1] ) - 1
 			methType = decodeMethType( lineAr[3] )
 			try:
