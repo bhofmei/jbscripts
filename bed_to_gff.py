@@ -3,8 +3,11 @@ import sys, math, glob, multiprocessing, subprocess, os, bisect, random
 # Usage: python3.4 bed_to_gff.py [-i=peak_finder_program_name] <bed_file>
 
 def processInputs( bedFileStr, source ):
-	rInd = bedFileStr.rfind( '.' )
-	gffFileStr = bedFileStr[:rInd] + '.gff'
+	if bedFileStr.endswith( '.bed' ) == False:
+		gffFileStr = bedFileStr + '.gff'
+	else:
+		rInd = bedFileStr.rfind( '.' )
+		gffFileStr = bedFileStr[:rInd] + '.gff'
 	print( 'Converting {:s} to {:s}'.format( bedFileStr, gffFileStr ) )
 	convertFile( bedFileStr, gffFileStr, source )
 	print( 'Done.' )
@@ -51,8 +54,7 @@ def parseInputs( argv ):
 	bedFileStr = argv[startInd]
 	
 	if bedFileStr.endswith('.bed') == False:
-		print( 'ERROR: bed file must end with ".bed"')
-		exit()
+		print( 'WARNING: bed file does not end with "bed"...check output results for correctness')
 	else:
 		processInputs( bedFileStr, source )
 
