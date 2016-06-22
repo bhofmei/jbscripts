@@ -193,8 +193,8 @@ def generateGeneText( infoAr ):
 		outStr += tab(3) + '"histograms" : {\n' + tab(4) + ' "color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
 		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
 	else:
-		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature"\n' + tab(3) +'},\n'
-	
+		outStr += tab(3) + '"style" : {\n' + tab(4) + '"description" : "description,note"\n' + tab(3) +'},\n'
+
 	# check orthologs
 	if infoAr[3] != "":
 		orthoAr = orthologs.split(';')
@@ -533,7 +533,7 @@ def generateRNAStrandText( infoAr ):
 	return outStr
 
 def getColors( typeStr ):
-	colors = ['blue', 'red', 'orange', 'yellow', 'purple', 'green', 'black', 'gray', 'cyan', 'magenta' ]
+	colors = ['blue', 'red', 'orange', 'yellow', 'purple', 'green', 'black', 'gray', 'cyan', 'magenta', 'darkred', 'darkblue' ]
 	typeDict = { 'h2az':'#ee7600', 'h3':'#8b7765', 'h3k4m3':'#9a32cd',
 		'h3k9m2':'#228b22', 'h3k56ac':'#ee1289', 'input':'#708090',
 		'h3k36m3':'#ee2c2c', 'h3k27m3':'#3a5fcd', 'h3t32':'#008b8b',
@@ -547,7 +547,9 @@ def getColors( typeStr ):
 		'h3t32g' :'#00688b', 'methyl':'#a1a1a1' }
 	outStr = typeDict.get( typeStr.lower() )
 	if outStr == None:
-		if typeStr in colors:
+		if typeStr.lower() in colors:
+			return typeStr
+		elif typeStr.startswith( '#' ):
 			return typeStr
 		return 'black'
 	return outStr
