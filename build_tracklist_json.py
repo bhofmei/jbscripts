@@ -6,7 +6,7 @@ from io import open
 '''
 info needed for
 # header is version
-All: label, key, category
+All: label, key, category, height
 ChIP: modification type, path/file name, ggf run, desciption
 Methylation: context, path/file name, description, method
 RNA-seq: path bigwig, path bam, metadata (ecotype, ggf run, source, description)'
@@ -19,7 +19,7 @@ bed: label, key, category, chip_type, meta
 atac-seq: bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
 
 Track File: tab or comma separated with headers:
-trackType label key category chip_type/meth_con/orthologs chip/meth/rna-seq_bigwig rna-seq_bam genome_version/description source_label/ggf_run source_link metadata_key_value
+trackType label key category height chip_type/meth_con/orthologs chip/meth/rna-seq_bigwig rna-seq_bam genome_version/description source_label/ggf_run source_link metadata_key_value
 '''
 
 def processInputs( trackInfoStr ):
@@ -72,16 +72,15 @@ def readInfoFile( trackInfoStr ):
 			lineAr = line.split(',')
 		if len(lineAr) < 2:
 			continue
-		# (0) trackType (1) label (2) key (3) category
-		# (4) chip_type/orthologs/reads_type
-		# (5) chip/meth/rna-seq_bigwig (6) reads/rna-seq_bam
-		# (7) genome_version/description
-		# (8) source_label/ggf_run (9) source_link
-		# (10) mapping_rate (11) percent_remaining
-		# (12) metadata_key_value
-		# acceptable track types: dna, genes, rnas, te, repeats, chip, rnaseq, methyl, peaks
+		# (0) trackType (1) label (2) key (3) category (4) height
+		# (5) chip_type/orthologs/reads_type
+		# (6) chip/meth/rna-seq_bigwig (7) reads/rna-seq_bam
+		# (8) genome_version/description
+		# (9) source_label/ggf_run (10) source_link
+		# (11) mapping_rate (12) percent_remaining
+		# (13) metadata_key_value
 		trackType = lineAr[0].lower()
-		if trackType not in ['dna', 'genes', 'rnas', 'te', 'tes', 'transposons', 'repeats', 'chip', 'rnaseq', 'smrna','smrnaseq','methyl', 'peaks', 'atac', 'atacseq', 'reads', 'read', 'rnastrand']:
+		if trackType not in ['dna', 'genes', 'rnas', 'te', 'tes', 'transposons', 'repeats', 'chip', 'rnaseq', 'smrna','smrnaseq','methyl','methylwig', 'peaks', 'atac', 'atacseq', 'reads', 'read', 'rnastrand']:
 			print( 'WARNING: {:s} is not a correct track type. Skipping...'.format( lineAr[0] ) )
 			continue
 		# commas for previous track
@@ -91,51 +90,54 @@ def readInfoFile( trackInfoStr ):
 		# handle type
 		if trackType == 'dna':
 			# label, key, category, genome_version, source_label, source_link
-			info = lineAr[1:4] + lineAr[7:10]
+			info = lineAr[1:4] + lineAr[8:11]
 			outStr += generateDNAtext( info )
 			
 		elif trackType == 'genes':
-			# label, key, category, orthologs, genome_version, source_label, source_link
-			info = lineAr[1:5] + lineAr[7:10]
+			# label, key, category, track_height, orthologs, genome_version, source_label, source_link
+			info = lineAr[1:6] + lineAr[8:11]
 			outStr += generateGeneText( info )
 			
 		elif trackType in ['rnas', 'te', 'tes', 'transposons', 'repeats']:
-			#label, key, category, genome_version, source_label, source_link
-			info = lineAr[1:4] + lineAr[7:10]
+			#label, key, category, track_height, genome_version, source_label, source_link
+			info = lineAr[1:5] + lineAr[8:11]
 			outStr += generateRnaTeText( info )
 			
 		elif trackType == 'chip':
-			# label, key, category, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:6] + lineAr[7:13]
+			# label, key, category, track_height, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:7] + lineAr[8:14]
 			outStr += generateChipText( info )
 		elif trackType in ['reads','read']:
-			# label, key, category, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:5] + lineAr[6:13]
+			# label, key, category, track_height, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:6] + lineAr[7:14]
 			outStr += generateReadsText( info )
 		elif trackType == 'rnaseq':
-			# label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:13]
+			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:14]
 			outStr += generateRnaSeqText( info )
 		elif trackType in ['smrna','smrnaseq']:
-			# label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:13]
+			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:14]
 			outStr += generateSmRnaSeqText( info )
-		elif trackType == 'methyl':
-			# label, key, category, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
-			''' info = lineAr[1:6] + lineAr[7:10] + [ lineAr[12] ] '''
-			info = lineAr[1:4] + lineAr[5:6] + lineAr[7:10] + [ lineAr[12] ]
-			outStr += generateMethylationText( info )
+		elif trackType == 'methyl':	# methylation verion 2
+			# label, key, category, track_height, bigwig, description, gff_run/source, source label, meta
+			info = lineAr[1:5] + lineAr[6:7] + lineAr[8:11] + [ lineAr[13] ]
+			outStr += generateMethylationTextv2( info )
+		elif trackType == 'methylwig':	# methylation version 1
+			# label, key, category, traack_height, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
+			info = lineAr[1:5] + lineAr[6:7] + lineAr[8:11] + [ lineAr[13] ]
+			outStr += generateMethylationTextv1( info )
 		elif trackType == 'peaks':
-			# label, key, category, chip_type, meta
-			info = lineAr[1:5] + [ lineAr[12] ]
+			# label, key, category, track_height, chip_type, meta
+			info = lineAr[1:6] + [ lineAr[13] ]
 			outStr += generatePeakBed( info )
 		elif trackType in ['atac','atacseq']:
-			# label, key, category, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:4] + [ lineAr[5] ] + lineAr[7:13]
+			# label, key, category, track_height, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:5] + [ lineAr[6] ] + lineAr[8:14]
 			outStr += generateAtacText( info )
 		elif trackType == 'rnastrand':
-			# label, key, category, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:6] + lineAr[7:13]
+			# label, key, category, trackHeight, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:7] + lineAr[8:14]
 			outStr += generateRNAStrandText( info )
 	# end for line
 	trackFile.close()
@@ -143,7 +145,7 @@ def readInfoFile( trackInfoStr ):
 
 def generateDNAtext( infoAr ):
 	'''
-		infoAr = [label, key, category, genome_version, source_label, source_link]
+		infoAr = [label, key, category, trackHeight, genome_version, source_label, source_link]
 		infoAr[i] == '' if info not available
 	'''
 	label, key, category, gVersion, sLabel, sLink = infoAr
@@ -181,9 +183,9 @@ def generateGenomeSource( genomeVersion, sourceLabel, sourceLink ):
 	
 def generateGeneText( infoAr ):
 	'''
-		infoAr = [label, key, category, orthologs, genome_version, source_label, source_link]
+		infoAr = [label, key, category, track_height, orthologs, genome_version, source_label, source_link]
 	'''
-	label, key, category, orthologs, gVersion, sLabel, sLink = infoAr
+	label, key, category, tHeight, orthologs, gVersion, sLabel, sLink = infoAr
 	color = getColors( label )
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
@@ -203,7 +205,7 @@ def generateGeneText( infoAr ):
 	# basics
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/NCList",\n'
 	outStr += tab(3) + '"trackType" : "CanvasFeatures",\n'
-	outStr += tab(3) + '"maxHeight" : 500,\n'
+	outStr += tab(3) + '"maxHeight" : {:s},\n'.format( '500' if tHeight == '' else tHeight )
 	outStr += tab(3) + '"maxFeatureScreenDensity" : 0.1,\n'
 	outStr += tab(3) + '"urlTemplate" : "tracks/'+label+'/{refseq}/trackData.json",\n'
 	outStr += tab(3) + '"compress" : 0,\n'
@@ -223,9 +225,9 @@ def generateOrtholog( species ):
 
 def generateRnaTeText( infoAr ):
 	'''
-		infoAr = [label, key, category, genome_version, source_label, source_link]
+		infoAr = [label, key, category, track_height, genome_version, source_label, source_link]
 	'''
-	label, key, category, gVersion, sLabel, sLink = infoAr
+	label, key, category, tHeight, gVersion, sLabel, sLink = infoAr
 	color = getColors( label )
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
@@ -239,7 +241,7 @@ def generateRnaTeText( infoAr ):
 	# basics
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/NCList",\n'
 	outStr += tab(3) + '"trackType" : "CanvasFeatures",\n'
-	outStr += tab(3) + '"maxHeight" : 400,\n'
+	outStr += tab(3) + '"maxHeight" : {:s},\n'.format( '400' if tHeight == '' else tHeight )
 	outStr += tab(3) + '"maxFeatureScreenDensity" : 0.1,\n'
 	outStr += tab(3) + '"urlTemplate" : "tracks/'+label+'/{refseq}/trackData.json",\n'
 	outStr += tab(3) + '"compress" : 0,\n'
@@ -253,7 +255,7 @@ def generateChipText( infoAr ):
 	'''
 		infoAr = [label, key, category, chip_type, bigwig, description, ggf_run/source, source_link, meta]
 	'''
-	label, key, category, chipType, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, chipType, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
 	color = getColors( chipType)
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
@@ -261,7 +263,7 @@ def generateChipText( infoAr ):
 	outStr += tab(3) + '"style" : {\n'
 	outStr += tab(4) + '"clip_marker_color" : "black",\n'
 	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"height" : 50\n'
+	outStr += tab(4) + '"height" : {:s}\n'.format( '50' if tHeight == '' else tHeight )
 	outStr += tab(3) + '},\n'
 	outStr += tab(3) + '"variance_band" : false,\n'
 	outStr += tab(3) + '"autoscale": "clipped_global",\n'
@@ -312,36 +314,16 @@ def generateMeta( description, sLabel, sLink, mapRate, perRemain, meta ):
 	outStr += '\n' + tab(3) + '},\n'
 	return before + outStr
 
-def generateMethylationText( infoAr ):
+def generateMethylationTextv1( infoAr ):
 	'''
-		infoAr = [label, key, category, chip_type, bigwig, description, ggf_run/source, source_link, meta]
+		infoAr = [label, key, category, track_height, bigwig, description, ggf_run/source, source_link, meta]
 	'''
-	'''label, key, category, context, bigWig, desc, sLabel, sLink, meta = infoAr
-	color = getColors( context)
+	label, key, category, tHeight, bigWig, desc, sLabel, sLink, meta = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	outStr += tab(3) + '"style" : {\n'
-	outStr += tab(4) + '"clip_marker_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"neg_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"height" : 50\n'
-	outStr += tab(3) + '},\n'
-	outStr += tab(3) + '"variance_band" : false,\n'
-	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
-	outStr += tab(3) + '"urlTemplate" : "raw/methyl/{:s}",\n'.format( bigWig )
-	outStr += generateMeta( desc, sLabel, sLink, '','', meta )
-	outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
-	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
-	outStr += tab(3) + '"min_score" : -1,\n'
-	outStr += tab(3) + '"max_score" : 1\n'
-	outStr += tab(2) + '}' '''
-	label, key, category, bigWig, desc, sLabel, sLink, meta = infoAr
-	outStr = tab(2) + '{\n'
-	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
-	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
-	outStr += tab(3) + '"style" : {\n'
-	outStr += tab(4) + '"height" : 70\n'
+	outStr += tab(4) + '"height" : {:s}\n'.format( '70' if tHeight == '' else tHeight )
 	outStr += tab(3) + '},\n'
 	outStr += tab(3) + '"min_score" : -1,\n'
 	outStr += tab(3) + '"max_score" : 1,\n'
@@ -354,11 +336,33 @@ def generateMethylationText( infoAr ):
 	outStr += tab(2) + '}'
 	return outStr
 
+def generateMethylationTextv2( infoAr ):
+	'''
+		infoAr = [label, key, category, track_height, chip_type, bigwig, description, ggf_run/source, source_link, meta]
+	'''
+	label, key, category, tHeight, bigWig, desc, sLabel, sLink, meta = infoAr
+	outStr = tab(2) + '{\n'
+	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
+	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	outStr += tab(3) + '"style" : {\n'
+	outStr += tab(4) + '"height" : {:s}\n'.format( '70' if tHeight == '' else tHeight )
+	outStr += tab(3) + '},\n'
+	outStr += tab(3) + '"min_score" : -1,\n'
+	outStr += tab(3) + '"max_score" : 1,\n'
+	outStr += tab(3) + '"variance_band" : false,\n'
+	outStr += tab(3) + '"storeClass" : "MethylationPlugin/Store/SeqFeature/MethylBigWig",\n'
+	outStr += tab(3) + '"urlTemplate" : "raw/methyl/{:s}",\n'.format( bigWig )
+	outStr += generateMeta( desc, sLabel, sLink, '','', meta )
+	outStr += tab(3) + '"type" : "MethylationPlugin/View/Track/Wiggle/MethylPlot",\n'
+	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
+	outStr += tab(2) + '}'
+	return outStr
+
 def generateRnaSeqText( infoAr ):
 	'''
-		infoAr = [label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, meta]
+		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta]
 	'''
-	label, key, category, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
 	if height == "":
 		maxheight = "1000"
 		minheight = '0'
@@ -386,7 +390,7 @@ def generateRnaSeqText( infoAr ):
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BAM",\n'
 	outStr += tab(3) + '"maxFeatureScreenDensity" : 2,\n'
-	outStr += tab(3) + '"maxHeight" : 400,\n'
+	outStr += tab(3) + '"maxHeight" : {:s},\n'.format( '400' if tHeight == '' else tHeight )
 	outStr += tab(3) + '"urlTemplate" : "raw/rna/{:s}",\n'.format( bam )
 	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
 	outStr += tab(3) + '"type" : "JBrowse/View/Track/Alignments2",\n'
@@ -397,9 +401,9 @@ def generateRnaSeqText( infoAr ):
 
 def generateSmRnaSeqText( infoAr ):
 	'''
-		infoAr = [label, key, category, height, bigwig, bam, description, source/ggf_run, source_link, meta]
+		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta]
 	'''
-	label, key, category, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
@@ -417,7 +421,7 @@ def generateSmRnaSeqText( infoAr ):
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BAM",\n'
 	outStr += tab(3) + '"maxFeatureScreenDensity" : 1.5,\n'
-	outStr += tab(3) + '"maxHeight" : 400,\n'
+	outStr += tab(3) + '"maxHeight" : {:s},\n'.format( '300' if tHeight == '' else tHeight )
 	outStr += tab(3) + '"urlTemplate" : "raw/smrna/{:s}",\n'.format( bam )
 	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
 	outStr += tab(3) + '"type" : "SmallRNAPlugin/View/Track/smAlignments",\n'
@@ -427,15 +431,15 @@ def generateSmRnaSeqText( infoAr ):
 
 def generateReadsText( infoAr ):
 	'''
-	label, key, category, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
+	label, key, category, track_type, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 	'''
-	label, key, category, folder, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, folder, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BAM",\n'
-	outStr += tab(3) + '"maxHeight" : 500,\n'
+	outStr += tab(3) + '"maxHeight" : {:s},\n'.format('500' if tHeight == '' else tHeight)
 	outStr += tab(3) + '"urlTemplate" : "raw/{:s}/{:s}",\n'.format( folder, bam )
 	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
 	outStr += tab(3) + '"type" : "JBrowse/View/Track/Alignments2",\n'
@@ -462,13 +466,14 @@ def parseMetaKeys( metaStr ):
 
 def generatePeakBed( infoAr ):
 	'''
-		infoAr = [label, key, category, chipType, meta]
+		infoAr = [label, key, category, track_height, chipType, meta]
 	'''
-	label, key, category, chipType, meta = infoAr
+	label, key, category, tHeight, chipType, meta = infoAr
 	color = getColors( chipType )
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	
 	outStr += tab(3) + '"style" : {\n'
 	outStr += tab(4) + '"className" : "feature6",\n'
 	outStr += tab(4) + '"showLabels" : false,\n'
@@ -484,19 +489,20 @@ def generatePeakBed( infoAr ):
 	outStr += tab(3) + '"urlTemplate" : "tracks/'+label+'/{refseq}/trackData.json",\n'
 	outStr += tab(3) + '"compress" : 0,\n'
 	outStr += tab(3) + '"type" : "JBrowse/View/Track/HTMLFeatures",\n'
+	outStr += tab(3) + '"maxHeight" : {:s},\n'.format('500' if tHeight == '' else tHeight)
 	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
 	outStr += tab(2) + '}'
 	return outStr
 
 def generateAtacText( infoAr ):
-	label, key, category, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	outStr += tab(3) + '"style" : {\n'
 	outStr += tab(4) + '"clip_marker_color" : "black",\n'
 	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( 'gray24' )
-	outStr += tab(4) + '"height" : 50\n'
+	outStr += tab(4) + '"height" : {:s}\n'.format('50' if tHeight == '' else tHeight)
 	outStr += tab(3) + '},\n'
 	outStr += tab(3) + '"variance_band" : false,\n'
 	outStr += tab(3) + '"autoscale": "clipped_global",\n'
@@ -510,9 +516,9 @@ def generateAtacText( infoAr ):
 
 def generateRNAStrandText( infoAr ):
 	'''
-		infoAr = [label, key, category, color, bigwig, description, ggf_run/source, source_link, meta]
+		infoAr = [label, key, category, track_height, color, bigwig, description, ggf_run/source, source_link, meta]
 	'''
-	label, key, category, color, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, color, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
@@ -520,7 +526,7 @@ def generateRNAStrandText( infoAr ):
 	outStr += tab(4) + '"clip_marker_color" : "black",\n'
 	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
 	outStr += tab(4) + '"neg_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"height" : 50\n'
+	outStr += tab(4) + '"height" : {:s}\n'.format('50' if tHeight == '' else tHeight)
 	outStr += tab(3) + '},\n'
 	outStr += tab(3) + '"variance_band" : false,\n'
 	outStr += tab(3) + '"autoscale": "clipped_global",\n'
