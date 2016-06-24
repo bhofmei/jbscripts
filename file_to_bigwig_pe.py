@@ -1,44 +1,23 @@
 import sys, math, glob, multiprocessing, subprocess, os, bisect, random
 
-# Usage: file_to_bigwig_pe.py [-keep] [-no-clean] [-strand] [-scale] [-union] [-p=num_proc]  <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*
+# Usage: file_to_bigwig_pe.py [-keep] [-scale] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*
 
 NUMPROC=1
 
-def processInputs( chrmFileStr, bedFileStrAr, keepTmp, isStrand, isScale, isUnion, numProc, needClean ):
+def processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, numProc ):
 	if len(bedFileStrAr)==1:
 		print( 'Input File: {:s}'.format( bedFileStrAr[0] ) )
 	else:
 		print( 'Input Files: {:s}'.format( ', '.join( bedFileStrAr ) ) )
-	print('Chromosome sizes file: {:s}\nKeep temporary files: {:s}\nStrand-specific: {:s}\nScale by library size: {:s}'.format( chrmFileStr, str( keepTmp ), str( isStrand ), str( isScale) ) )
-	if isStrand:
-		print( 'Combine strand-specific output: {:s}\n'.format( str(isUnion) ) )
-	print( 'Cleaning chromosome names: {:s}'.format( str(needClean)))
-	# read chrm sizes file to get chrm list to include
-	if needClean:
-		print( 'Reading chromosome sizes file' )
-		chrmList = readChrmFile( chrmFileStr )
-	else:
-		chrmList = None
+	print('Chromosome sizes file: {:s}\nKeep temporary files: {:s}\nScale by library size: {:s}'.format( chrmFileStr, str( keepTmp ), str( isScale) ) )
 	
 	print( 'Begin processing files with {:d} processors'.format( numProc ) )
 	pool = multiprocessing.Pool( processes=numProc )
-	results = [ pool.apply_async( processFile, args=(bedFileStr, chrmFileStr, chrmList, keepTmp, isStrand, isScale, isUnion) ) for bedFileStr in bedFileStrAr ]
+	results = [ pool.apply_async( processFile, args=(bedFileStr, chrmFileStr, keepTmp, isStrand) ) for bedFileStr in bedFileStrAr ]
 	suc = [ p.get() for p in results ]
 	print( 'Done.' )
 	
-def readChrmFile( inFileStr ):
-	
-	inFile = open( inFileStr, 'r' )
-	chrmList= []
-	
-	for line in inFile:
-		lineAr = line.rstrip().split( '\t' )
-		# (0) chrm (1) length ...
-		chrmList += [ lineAr[0] ]
-	inFile.close()
-	return chrmList
-	
-def processFile( bedFileStr, chrmFileStr, chrmList, keepTmp, isStrand, isScale, isUnion ):
+def processFile( bedFileStr, chrmFileStr, keepTmp, isScale ):
 	baseDir = os.path.dirname( bedFileStr )
 	ind = bedFileStr.rfind('.')
 	baseName = bedFileStr[:ind]
@@ -53,13 +32,6 @@ def processFile( bedFileStr, chrmFileStr, chrmList, keepTmp, isStrand, isScale, 
 		command = 'bedtools bamtobed -i {:s} > {:s}'.format( bamFileStr, bedFileStr )
 		subprocess.call( command, shell=True )
 		rmFile += [ bedFileStr ]
-	
-	if chrmList != None:
-		# check chrm names and such
-		bedOutStr = '{:s}_clean.bed'.format( baseName )
-		print( 'Checking chromosome names in bed' )
-		bedFileStr = cleanBedFile( bedFileStr, bedOutStr, chrmList )
-		rmFile += [ bedFileStr ]
 		
 	# get scale value if necessary
 	scaleVal = 1
@@ -70,16 +42,7 @@ def processFile( bedFileStr, chrmFileStr, chrmList, keepTmp, isStrand, isScale, 
 	sortBedFile( bedFileStr )
 	
 	# bed to bedGraph
-	if isUnion:
-		bedGraphFileAr = convertToBedGraphStrand( bedFileStr, chrmFileStr, baseName, scaleVal )
-		rmFile += bedGraphFileAr
-		bedGraphFile = uniteBedGraph( bedGraphFileAr[0], bedGraphFileAr[1], chrmFileStr, baseName )
-		subAr = [ '_union' ]
-	elif isStrand:
-		bedGraphFile = convertToBedGraphStrand( bedFileStr, chrmFileStr, baseName, scaleVal )
-		subAr = [ '_plus', '_minus' ]
-	else:
-		bedGraphFile = convertToBedGraph( bedFileStr, chrmFileStr, baseName, scaleVal )
+	bedGraphFile = convertToBedGraph( bedFileStr, chrmFileStr, baseName, scaleVal )
 		subAr = [ '' ]
 	
 	rmFile += bedGraphFile
@@ -107,7 +70,6 @@ def cleanBedFile( bedFileStr, outFileStr, chrmList ):
 			outFile.write( line )
 			continue
 		lineAr = line.rstrip().split( '\t' )
-		name = formatChrmName( lineAr[0] )
 		if name in chrmList:
 			lineAr[0] = name
 			outFile.write( '\t'.join( lineAr ) + '\n' )
@@ -115,38 +77,6 @@ def cleanBedFile( bedFileStr, outFileStr, chrmList ):
 	outFile.close()
 	bedFile.close()
 	return outFileStr
-
-def formatChrmName( inName ):
-	
-	chrm = inName.lower()
-	if chrm == 'c' or chrm == 'chloroplast' or chrm == 'chrc':
-		'ChrC'
-	elif chrm == 'm' or chrm == 'mitochondria' or chrm == 'chrm' or chrm == 'mt':
-		return 'ChrM'
-	elif chrm == 'l' or chrm == 'lambda' or chrm == 'chrl':
-		return 'ChrL'
-	# digit only number
-	elif chrm.isdigit():
-		return 'Chr'+chrm
-	elif chrm.startswith( 'chromosome0' ):
-		return chrm.replace( 'chromosome0', 'Chr' )
-	elif chrm.startswith( 'chromosome' ):
-		return chrm.replace( 'chromosome', 'Chr' )
-	elif chrm.startswith( 'chrm0' ):
-		return chrm.replace( 'chrm0', 'Chr' )
-	elif chrm.startswith( 'chrm' ):
-		return chrm.replace( 'chrm', 'Chr' )
-	elif chrm.startswith( 'chr0' ):
-		return chrm.replace( 'chr0', 'Chr' )
-	elif chrm.startswith( 'chr' ):
-		return chrm.replace( 'chr', 'Chr' )
-	elif chrm.startswith( 'scaffold' ):
-		return chrm
-	elif chrm.startswith( 'contig' ):
-		return chrm
-	else:
-		return chrm
-
 
 def getScaleValue( bedFileStr ):
 	command = 'wc -l {:s}'.format( bedFileStr )
@@ -191,27 +121,6 @@ def negativeBedGraph( bedGraphFileMinus, bedGraphTmp ):
 		bedGraphFile.write( '{:s}\n'.format( '\t'.join(lineAr) ) )
 	tmpFile.close()
 	bedGraphFile.close()
-
-def uniteBedGraph( bedGraphPlus, bedGraphMinus, chrmFileStr, baseName ):
-	print( 'Uniting bedGraphs {:s} & {:s}'.format( bedGraphPlus, bedGraphMinus ) )
-	bedGraphFile = '{:s}_stranded.bedGraph'.format( baseName )
-	command = 'bedtools unionbedg -empty -g {:s} -i {:s} {:s} > {:s}'.format( chrmFileStr, bedGraphPlus, bedGraphMinus, bedGraphFile + '.tmp' )
-	subprocess.call( command, shell=True )
-	sumBedGraph( bedGraphFile, bedGraphFile + '.tmp' )
-	os.remove( bedGraphFile + '.tmp' )
-	return [ bedGraphFile ]
-	
-def sumBedGraph( bedGraphFile, bedGraphTmp ):
-	
-	bedGraph = open( bedGraphFile, 'w' )
-	tmpFile = open( bedGraphTmp, 'r' )
-	for line in tmpFile:
-		lineAr = line.rstrip().split('\t' )
-		# (0) chrm (1) start (2) end (3+) samples
-		lNum = [ float(x) for x in lineAr[3:] ]
-		bedGraph.write( '{:s}\t{:.2f}\n'.format( '\t'.join(lineAr[0:3]), sum(lNum) ) )
-	tmpFile.close()
-	bedGraph.close()
 	
 def convertToBigWig( bedGraphFileAr, chrmFileStr, baseName, subAr ):
 	
@@ -224,27 +133,15 @@ def convertToBigWig( bedGraphFileAr, chrmFileStr, baseName, subAr ):
 
 def parseInputs( argv ):
 	keepTmp = False
-	isStrand = False
 	isScale = False
-	isUnion = False
-	needClean = True
 	numProc = NUMPROC
 	startInd = 0
 	for i in range(min(7,len(argv)-2)):
 		if argv[i] == '-keep':
 			keepTmp = True
 			startInd += 1
-		elif argv[i] == '-no-clean':
-			needClean = False
-			startInd += 1
-		elif argv[i] == '-strand':
-			isStrand = True
-			startInd += 1
 		elif argv[i] == '-scale':
 			isScale = True
-			startInd += 1
-		elif argv[i] == '-union':
-			isUnion = True
 			startInd += 1
 		elif argv[i].startswith( '-p=' ):
 			try:
@@ -270,10 +167,10 @@ def parseInputs( argv ):
 	for j in range(startInd+1, len(argv)):
 		bedFileStrAr += [ argv[j] ]
 	
-	processInputs( chrmFileStr, bedFileStrAr, keepTmp, isStrand, isScale, isUnion, numProc, needClean )
+	processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, numProc )
 	
 def printHelp():
-	print ("Usage: python3 file_to_bigwig_pe.py [-keep] [-no-clean] [-strand] [-scale] [-union] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*")
+	print ("Usage: python3 file_to_bigwig_pe.py [-keep] [-scale] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*")
 	print( 'Convert BED/BAM file to bigWig format for coverage view' )
 	print( 'Note: bedtools, bedGraphToBigWig, and bedSort programs must be in the path' )
 	print( 'Required:' )
@@ -282,10 +179,7 @@ def printHelp():
 	print( 'bed_file\tBED formatted file' )
 	print( 'Optional:' )
 	print( '-keep\t\tkeep intermediate files' )
-	print( '-no-clean\tdoes not check chromosome names match chrm file\n\t\tnot recommended' )
-	print( '-strand\t\tseparate reads by strand to have strand-specific bigwig files' )
 	print( '-scale\t\tscale the bigwig values by total number of reads in file' )
-	print( '-union\t\tused with strand, add stand-specific values for one bigwig file' )
 	print( '-p=num_proc\tnumber of processors to use [default 1]' )
 
 if __name__ == "__main__":
