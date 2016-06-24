@@ -1,13 +1,19 @@
 import sys, os
 from name_formatting import *
 
-# Usage: python3 prepare_fasta_for_browser.py [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] <input_fasta>
+# Usage: python3 prepare_fasta_for_browser.py [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] [-i=include_chrm_list] [-x=exclude_chrm_list] <input_fasta>
 
-def processInputs( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions ):
+def processInputs( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions, includeList, excludeList ):
 	fileName = os.path.basename( fastaFileStr )
 	fileDir = os.path.dirname( fastaFileStr )
 	rInd = fileName.rfind( '.' )
 	outName = fileName[:rInd] + '_browser.fa'
+	
+	# Check include/exclude list
+	inex = checkIncludeExclude( includeList, excludeList )
+	if inex == False:
+		exit()
+	
 	outFileStr = os.path.join( fileDir,  outName )
 	print( 'FASTA file: {:s}\nOutput file: {:s}'.format( fileName, outName ) )
 	# decode option types
@@ -26,13 +32,31 @@ def processInputs( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOpt
 	print( 'Mitochondria format: {:s}\nChloroplast format: {:s}\nLambda format: {:s}'.format( ('None' if mtType == None else mtType ), ('None' if chType == None else chType ), ('None' if lmType == None else lmType ) ) )
 	
 	print( 'Reading', os.path.basename(fastaFileStr) )
-	outDict = readFasta( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions )
+	outDict = readFasta( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions, includeList, excludeList )
 	
 	print( 'Writing', os.path.basename(outFileStr) )
 	writeOutput( outFileStr, outDict )
 	print( 'Done' )
 
-def readFasta( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions ):
+def checkIncludeExclude( includeList, excludeList ):
+	if includeList == None and excludeList == None:
+		return True
+	elif excludeList == None:	# include only
+		print( 'Include list: {:s}'.format( ', '.join( includeList) ) )
+		return True
+	elif includeList == None:	# exclude only
+		print( 'Exclude list: {:s}'.format( ', '.join( excludeList) ) )
+		return True
+	else:	# both specified
+		for i in includeList:
+			if i in excludeList:
+				print( 'ERROR: {:s} is in include list and exclude list'.format( i) )
+				return False
+		print( 'Include list: {:s}'.format( ', '.join( includeList) ) )
+		print( 'Exclude list: {:s}'.format( ', '.join( excludeList) ) )
+
+
+def readFasta( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions, includeList, excludeList ):
 	fastaFile = open( fastaFileStr, 'r' )
 	# Options
 	cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
@@ -41,6 +65,8 @@ def readFasta( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions
 	mtType, chType, lmType = decodeCLMOptions( clmOptions )
 	oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
 	
+	includes = (includeList != None )
+	excludes = (excludeList != None )
 	outDict = {}
 	curSeq = None
 	curDigit = False
@@ -58,6 +84,11 @@ def readFasta( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions
 			# new line
 			lineAr = line.rstrip().split()
 			name = lineAr[0].replace('>', '')
+			# do we want to include this
+			if includes and name not in includeList:
+				continue
+			elif excludes and name in excludeList:
+				continue
 			nType = determineType( name )
 			if nType == 'chr':
 				nname = formatChrm( name, cCap, cLong, cUnSc, cZero, cEmpty )
@@ -100,9 +131,11 @@ def parseInputs( argv ):
 	contigOptions = ''
 	clmOptions = ''
 	otherOptions = ''
+	includeList = None
+	excludeList = None
 	startInd = 0
 	
-	for i in range(min(6,len(argv)-1)):
+	for i in range(min(8,len(argv)-1)):
 		if argv[i].startswith( '-c=' ):
 			chrmOptions = argv[i][3:]
 			startInd += 1
@@ -118,6 +151,12 @@ def parseInputs( argv ):
 		elif argv[i].startswith( '-o=' ):
 			otherOptions = argv[i][3:]
 			startInd += 1
+		elif argv[i].startswith( '-i=' ):
+			includeList = argv[i][3:].split( ',' )
+			startInd += 1
+		elif argv[i].startswith( '-x=' ):
+			excludeList = argv[i][3:].split( ',' )
+			startInd += 1
 		elif argv[i] in ['-h','--h','--help','-help']:
 			printHelp()
 			exit()
@@ -126,13 +165,17 @@ def parseInputs( argv ):
 			exit()
 	# end for
 	fastaFileStr = argv[startInd]
-	processInputs( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions )
+	processInputs( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions, includeList, excludeList )
 
 def printHelp():
-	print ("Usage: python3 prepare_fasta_for_browser.py [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] <input_fasta>")
+	print ("Usage: python3 prepare_fasta_for_browser.py [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] [-i=chrms_to_include] [-x=chrms_to_exclude] <input_fasta>")
 	print( 'Renames the chromsomes/contigs based on input parameter formatting' )
 	print( 'Required:' )
 	print( 'fasta_file\tpath to FASTA formatted genomic DNA file' )
+	print( 'Optional:' )
+	print( '-i=chrm_list\tonly include seqs in this list, comma-separated' )
+	print( '-x=chrm_list\texclude seqs in this list, comma-separated' )
+	print( '\t\tnames must match seq names in input fasta' )
 	print( 'Formatting: ')
 	print( getFormattingScheme( ) )
 
