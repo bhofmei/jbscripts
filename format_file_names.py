@@ -140,7 +140,7 @@ def printHelp():
 	print( 'in_file\tpath to data file\n\tinfile must be .csv or .tsv unless delim is specified' )
 	print( 'Optional: ' )
 	print( '-d=delim\tfield deliminator' )
-	print( '-n=col_nam\t0-based column number for chrm column' )
+	print( '-n=col_num\t0-based column number for chrm column' )
 	print( 'Formatting: ')
 	print( getFormattingScheme( ) )
 	

@@ -250,7 +250,7 @@ def formatForDict( name, type ):
 		out += 'Chr'
 		if name.lower() in ['chrc', 'chloroplast','c']:
 			nname = 'C'
-		elif name.lower() in ['chrm','mitochrondria','chrmt','m']:
+		elif name.lower() in ['chrm','mitochondria','chrmt','m']:
 			nname = 'M'
 		elif name.lower() in ['chrl','lambda','l']:
 			nname = 'L'
