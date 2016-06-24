@@ -4,6 +4,7 @@ def getFormattingScheme( ):
 	out =  'General (chrm, scaf, contig)\n'
 	out += '\tu\tunderscore\n' 
 	out += '\tz\tzeros prefixing 1\n' 
+	out += '\tn\tdo not include\n'
 	out += '\te\tempty; just the digit (do not use with other options)\n' 
 	out += 'Chromosomes:\tChr1 [default]\n'
 	out += '\tl\tlowercase\n'
@@ -29,12 +30,13 @@ def getFormattingScheme( ):
 	out += '\tl\tlowercase\n'
 	out += '\tH\tadd \'Chr\'\n'
 	out += '\th\tadd \'chr\'\n'
+	out += '\tn\tdo not include\n'
 	return out
 
 def determineType( name ):
 	
 	n = name.lower()
-	if n in ['chrc', 'chrm', 'chrl', 'chloroplast', 'mitochrondria', 'lambda', 'chrmt', 'c', 'm', 'l', 'mt' ]:
+	if n in ['chrc', 'chrm', 'chrl', 'chloroplast', 'mitochondria', 'lambda', 'chrmt', 'c', 'm', 'l', 'mt' ]:
 		return 'clm'
 	elif n.startswith( 'chr' ):
 		return 'chr'
@@ -56,7 +58,7 @@ def checkEmpty( options, label ):
 
 def decodeChrmOptions( options ):
 	opts = list(options.lower())
-	isCap = 'l' not in opts
+	isCap = (None if 'n' in opts else ('l' not in opts) )
 	isLong = 'h' in opts
 	isUnSc = 'u' in opts
 	isZero = opts.count( 'z' )
@@ -64,6 +66,8 @@ def decodeChrmOptions( options ):
 	return isCap, isLong, isUnSc, isZero, isEmpty
 
 def formatChrm( name, isCap, isLong, isUnSc, isZero, isEmpty ):
+	if isCap == None:
+		return None
 	out = ( 'Chr' if isCap else 'chr' )
 	out += ('omosome' if isLong else '' )
 	out += ( '_' if isUnSc else '' )
@@ -83,7 +87,7 @@ def formatChrm( name, isCap, isLong, isUnSc, isZero, isEmpty ):
 
 def decodeScafOptions( options ):
 	opts = list(options.lower())
-	isCap = 'c' in opts
+	isCap = ( None if 'n' in opts else('c' in opts) )
 	isShort = 's' in opts
 	isUnSc = 'u' in opts
 	isZero = opts.count( 'z' )
@@ -91,6 +95,8 @@ def decodeScafOptions( options ):
 	return isCap, isShort, isUnSc, isZero, isEmpty
 
 def formatScaf( name, isCap, isShort, isUnSc, isZero, isEmpty ):
+	if isCap == None:
+		return None
 	out = ('Scaf' if isCap else 'scaf' )
 	out += ('' if isShort else 'fold' )
 	out += ('_' if isUnSc else '' )
@@ -110,13 +116,15 @@ def formatScaf( name, isCap, isShort, isUnSc, isZero, isEmpty ):
 
 def decodeContigOptions( options ):
 	opts = list(options.lower())
-	isCap = 'c' in opts
+	isCap = (None if 'n' in opts else('c' in opts) )
 	isUnSc = 'u' in opts
 	isZero = opts.count( 'z' )
 	isEmpty = 'e' in opts
 	return isCap, isUnSc, isZero, isEmpty
 
 def formatContig( name, isCap, isUnSc, isZero, isEmpty ):
+	if isCap == None:
+		return None
 	out = ('Contig' if isCap else 'contig' )
 	out += ('_' if isUnSc else '' )
 	if isEmpty:
@@ -189,7 +197,7 @@ def formatCLM( name, mtType, chType, lmType ):
 	n=name.lower()
 	if n in ['chrc', 'chloroplast','c']:
 		return chType
-	elif n in ['chrm','mitochrondria','chrmt','m']:
+	elif n in ['chrm','mitochondria','chrmt','m']:
 		return mtType
 	elif n in ['chrl','lambda','l']:
 		return lmType
@@ -207,7 +215,7 @@ def decodeOtherOptions( options ):
 		if addchr and not addChr:
 			addChr = None
 	
-	isCap = 'c' in optsl
+	isCap = ( None if 'n' in optsl else('c' in optsl) )
 	isLower = 'l' in optsl
 	if 'c' in optsl and 'l' in optsl:
 		print( 'WARNING: do not specify capitalizing and lowercase for other..using neither' )
@@ -216,7 +224,8 @@ def decodeOtherOptions( options ):
 	return isCap, isLower, addChr
 
 def formatOther( name, isCap, isLower, addChr ):
-	
+	if isCap == None:
+		return None
 	if addChr == None:
 		out = 'chr'
 	else:
