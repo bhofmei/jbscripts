@@ -1,18 +1,34 @@
-import sys, math, glob, multiprocessing, subprocess, os, bisect, random
+import sys, os
+from name_formatting import *
 
-# Usage: python prepare_gff_for_browser.py [-no-clean] [-rna] [-tes] [-rpt] [-o=output_prefix] [-no-scaf] [-no-clm] <gff_file>
+# Usage: python3 prepare_gff_for_browser.gff [-rna] [-rpt] [-tes] [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] <gff_file>
 
-def processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRepeats, useScaffolds, useCLM, needClean ):
+def processInputs( gffFileStr, includeRNA, includeTransposons, includeRepeats, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions ):
+	# decode option types
+	chrmOptions = checkEmpty( chrmOptions, 'chrms' )
+	cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
+	print( 'Chromosome formatting: {:s}'.format( formatChrm('1', cCap, cLong, cUnSc, cZero, cEmpty ) ) )
+	scafOptions = checkEmpty( scafOptions, 'scaffolds' )
+	sCap, sShort, sUnSc, sZero, sEmpty = decodeScafOptions( scafOptions )
+	print( 'Scaffold formatting: {:s}'.format( formatScaf('1', sCap, sShort, sUnSc, sZero, sEmpty ) ) )
+	contigOptions = checkEmpty( contigOptions, 'contigs' )
+	tCap, tUnSc, tZero, tEmpty = decodeContigOptions( contigOptions )
+	print( 'Contig formatting: {:s}'.format( formatContig('1', tCap, tUnSc, tZero, tEmpty ) ) )
+	oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
+	print( 'Other formatting: {:s}'.format( formatOther('Other', oCap, oLower, oChrm ) ) )
+	mtType, chType, lmType = decodeCLMOptions( clmOptions )
+	print( 'Mitochondria format: {:s}\nChloroplast format: {:s}\nLambda format: {:s}'.format( ('None' if mtType == None else mtType ), ('None' if chType == None else chType ), ('None' if lmType == None else lmType ) ) )
 	
-	print( 'Reading {:s}...'.format( gffFileStr ) )
-	genes, rna, te, repeats = processGFF( gffFileStr, useScaffolds, useCLM, needClean  )
+	print( 'Reading', os.path.basename(gffFileStr) )
 	
-	if outPre == None:
-		outBase = os.path.basename( gffFileStr )
-		rInd = outBase.rfind ('.')
-		outPre = outBase[:rInd]
+	genes, rna, tes, repeats = readGFF( gffFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions )
+	fileName = os.path.basename( gffFileStr )
+	fileDir = os.path.dirname( gffFileStr )
+	rInd = fileName.rfind( '.' )
+	outName = fileName[:rInd]
+	outPre = os.path.join( fileDir,  outName )
 	outFileGenes = outPre + '_browser_genes.gff'
-	print( 'Writing {:s}...'.format( outFileGenes ) )
+	print( 'Writing', os.path.basename(outFileGenes) )
 	writeOutput( outFileGenes, genes )
 	
 	if includeRNA:
@@ -23,7 +39,7 @@ def processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRe
 	if includeTransposons:
 		outFileTE = outPre + '_browser_transposons.gff'
 		print( 'Writing {:s}...'.format( outFileTE ) )
-		writeOutput( outFileTE, te )
+		writeOutput( outFileTE, tes )
 		
 	if includeRepeats:
 		outFileRP = outPre + '_browser_repeats.gff'
@@ -31,13 +47,13 @@ def processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRe
 		writeOutput( outFileRP, repeats )
 	print( 'Done' )
 
-def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
-	
+def readGFF( gffFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions ):
 	gffFile = open( gffFileStr, 'r' )
 	genes = ''
 	rna = ''
 	te = ''
 	repeat = ''
+	formatDict = {}
 	
 	currGeneLine = None
 	writeGene = False
@@ -57,7 +73,11 @@ def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
 			if lineAr[2] in [ 'chromosome', 'exon', 'protein', 'intron' ]:
 				continue
 			# format chrm name
-			name = formatChrmName( lineAr[0], useScaffolds, useCLM, needClean )
+			if lineAr[0] in formatDict.keys():
+				name = formatDict[lineAr[0]]
+			else:
+				name = formatChrmName( lineAr[0], chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions )
+				formatDict[lineAr[0]] = name
 			#print( lineAr[0], name )
 			if name == False:	# don't include
 				continue
@@ -105,70 +125,43 @@ def processGFF( gffFileStr, useScaffolds, useCLM, needClean  ):
 	gffFile.close()
 	return genes, rna, te, repeat
 
-def formatChrmName( inName, useScaffolds, useCLM, needClean ):
+def formatChrmName( name, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions ):
 	
-	chrm = inName.lower()
-	if chrm == 'c' or chrm == 'chloroplast' or chrm == 'chrc':
-		if useCLM:
-			return ( 'ChrC' if needClean else chrm )
-		return False
-	elif chrm == 'm' or chrm == 'mitochondria' or chrm == 'chrm' or chrm == 'mt':
-		if useCLM:
-			return ( 'ChrM' if needClean else chrm )
-		return False
-	elif chrm == 'l' or chrm == 'lambda' or chrm == 'chrl':
-		if useCLM:
-			return ( 'ChrL' if needClean else chrm )
-		return False
-	# digit only number
-	elif chrm.isdigit():
-		return ('Chr'+chrm if needClean else chrm )
-	elif chrm.startswith('chr') and needClean == False:
-		return chrm
-	elif chrm.startswith('chr'):
-		if chrm.startswith( 'chromosome0' ):
-			return chrm.replace( 'chromosome0', 'Chr' )
-		elif chrm.startswith( 'chromosome' ):
-			return chrm.replace( 'chromosome', 'Chr' )
-		elif chrm.startswith( 'chrm0' ):
-			return chrm.replace( 'chrm0', 'Chr' )
-		elif chrm.startswith( 'chrm' ):
-			return chrm.replace( 'chrm', 'Chr' )
-		elif chrm.startswith( 'chr0' ):
-			return chrm.replace( 'chr0', 'Chr' )
-		elif chrm.startswith( 'chr' ):
-			return chrm.replace( 'chr', 'Chr' )
-	elif chrm.startswith( 'scaffold' ):
-		if useScaffolds:
-			return chrm
-		return False
-	elif chrm.startswith( 'unanchored' ):
-		if useScaffolds:
-			return chrm
-		return False
-	elif chrm.startswith( 'contig' ):
-		if useScaffolds:
-			return chrm
-		return False
-	else:
-		return chrm
+	nType = determineType( name )
+	if nType == 'chr':
+		cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
+		nname = formatChrm( name, cCap, cLong, cUnSc, cZero, cEmpty )
+	elif nType == 'scaf':
+		sCap, sShort, sUnSc, sZero, sEmpty = decodeScafOptions( scafOptions )
+		nname = formatScaf( name, sCap, sShort, sUnSc, sZero, sEmpty )
+	elif nType == 'contig':
+		tCap, tUnSc, tZero, tEmpty = decodeContigOptions( contigOptions )
+		nname = formatContig( name, tCap, tUnSc, tZero, tEmpty )
+	elif nType == 'other':
+		oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
+		nname = formatOther( name, oCap, oLower, oChrm )
+	elif nType ==  'clm':
+		mtType, chType, lmType = decodeCLMOptions( clmOptions )
+		nname = formatCLM( name, mtType, chType, lmType )
+	return (False if nname == None else nname )
 
 def writeOutput( outFileStr, outStr ):
 	outFile = open( outFileStr, 'w' )
 	outFile.write( outStr )
 	outFile.close()
-
+	
 def parseInputs( argv ):
+	chrmOptions = ''
+	scafOptions = ''
+	contigOptions = ''
+	clmOptions = ''
+	otherOptions = ''
 	includeRNA = False
 	includeTransposons = False
 	includeRepeats = False
-	useScaffolds = True
-	useCLM = True
-	needClean = True
-	outPre = None
 	startInd = 0
 	
-	for i in range(min(6,len(argv))):
+	for i in range(min(9,len(argv)-1)):
 		if argv[i] == '-rna':
 			includeRNA = True
 			startInd += 1
@@ -178,32 +171,33 @@ def parseInputs( argv ):
 		elif argv[i] == '-rpt':
 			includeRepeats = True
 			startInd += 1
-		elif argv[i] == '-no-clean':
-			needClean = False
+		elif argv[i].startswith( '-c=' ):
+			chrmOptions = argv[i][3:]
+			startInd += 1
+		elif argv[i].startswith( '-s=' ):
+			scafOptions = argv[i][3:]
+			startInd += 1
+		elif argv[i].startswith( '-t=' ):
+			contigOptions = argv[i][3:]
+			startInd += 1
+		elif argv[i].startswith( '-l=' ):
+			clmOptions = argv[i][3:]
 			startInd += 1
 		elif argv[i].startswith( '-o=' ):
-			outPre = argv[i][3:]
+			otherOptions = argv[i][3:]
 			startInd += 1
-		elif argv[i] == '-no-scaf' or argv[i] == '-no-scaff':
-			useScaffolds = False
-			startInd +=1
-		elif argv[i] == '-no-clm':
-			useCLM = False
-			startInd +=1
-		elif argv[i] in [ '-h', '--help', '-help']:
-			printHelp( )
+		elif argv[i] in ['-h','--h','--help','-help']:
+			printHelp()
 			exit()
-		elif argv[i].startswith('-'):
-			print( 'Error: {:s} is not a valid option'.format( argv[i] ) )
+		elif argv.startswith( '-' ):
+			print( '{:s} is not a valid parameter'.format( argv[i] ) )
 			exit()
-	
+	# end for
 	gffFileStr = argv[startInd]
-	processInputs( gffFileStr, outPre, includeRNA, includeTransposons, includeRepeats, useScaffolds, useCLM, needClean  )
-			
+	processInputs( gffFileStr, includeRNA, includeTransposons, includeRepeats, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions )
+
 def printHelp():
-	print ("Usage: python prepare_gff_for_browser.py [-rna] [-tes] [-rpt] [-o=output_prefix] [-no-scaf] [-no-clm] <gff_file>")
-	print( 'Converts an existing GFF file to be optimum for JBrowse' )
-	print( 'Additionally correct chromosome naming scheme to be consistent' )
+	print ("Usage: python3 prepare_gff_for_browser.gff [-rna] [-rpt] [-tes] [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] <gff_file>")
 	print( 'Required:' )
 	print( 'gff_file\tGFF formatted file to be processed' )
 	print( 'Optional:' )
@@ -211,11 +205,8 @@ def printHelp():
 	print( '-tes\tGFF file has transposons annotated; writes these to a separate file' )
 	print( '-rpt\tGFF file has repeats annotated; writes these to a separate file' )
 	print( '\t\trepeat is considered "similarity" or "RM"' )
-	print( '-no-clean\tdo not rename chromosomes; not recommended' )
-	print( '-no-scaf\tdoes not include scaffolds/contigs in the output' )
-	print( '\t\tuse when majority of DNA is in chromosomes' )
-	print( '-no-clm\t\tdo not inlclude chroloplast, mitochondria, lambda, and\n\t\tnon-digit chrms in output' )
-	print( '-o=out_prefix\tprefix for output GFF file(s) [default: GFF file name' )
+	print( 'Formatting: ')
+	print( getFormattingScheme( ) )
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2 :

@@ -1,4 +1,14 @@
 release_notes.txt
+Jun 24, 2016
+MAJOR UPDATE
+- To allow more customization in naming species, prepare_fasta_for_browser.py and prepare_gff_for_browser.py have been updated. They are still backwards compatible to previous versions. Call the specific programs for parameters/options. This requires the name_formatting.py file to be in the same directory.
+
+
+Jun 22, 2016
+Updated bed_to_gff so it doesn't require input file to end in "bed"
+
+Apr 15, 2016
+updated allc: added -sort parameter that calls bedSort; use when allc_to_bigwig_pe.py fails because of sorting issues
 
 Feb 28, 2016
 prepare_fasta_for_browser.py and prepare_gff_for_browser.py now remove unnecessary 0 in chrm names and groups non-digit named charms (i.e. Mt or Sy) with clm-type
