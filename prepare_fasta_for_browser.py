@@ -130,6 +130,7 @@ def parseInputs( argv ):
 
 def printHelp():
 	print ("Usage: python3 prepare_fasta_for_browser.py [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] <input_fasta>")
+	print( 'Renames the chromsomes/contigs based on input parameter formatting' )
 	print( 'Required:' )
 	print( 'fasta_file\tpath to FASTA formatted genomic DNA file' )
 	print( 'Formatting: ')

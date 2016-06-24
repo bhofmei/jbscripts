@@ -198,6 +198,7 @@ def parseInputs( argv ):
 
 def printHelp():
 	print ("Usage: python3 prepare_gff_for_browser.gff [-rna] [-rpt] [-tes] [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] <gff_file>")
+	print( 'Renames chromosomes/contigs based on input parameters\nRemoves unnecessary annotations so the browser is cleaner' )
 	print( 'Required:' )
 	print( 'gff_file\tGFF formatted file to be processed' )
 	print( 'Optional:' )

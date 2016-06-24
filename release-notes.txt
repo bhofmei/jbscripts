@@ -1,7 +1,12 @@
 release_notes.txt
 Jun 24, 2016
 MAJOR UPDATE
-- To allow more customization in naming species, prepare_fasta_for_browser.py and prepare_gff_for_browser.py have been updated. They are still backwards compatible to previous versions. Call the specific programs for parameters/options. This requires the name_formatting.py file to be in the same directory.
+- To allow more customization in naming species
+  * prepare_fasta_for_browser.py and prepare_gff_for_browser.py have been updated.
+  * Call the specific programs for parameters/options.
+  * For files being converted to bigwig, run format_file_names.py to rename chromosomes. Then convert to bigwig on the formatted file
+  * All programs require name_formatting.py to be in the same directory.
+  * All programs use the same name formatting parameters allowing specific formatting for chromosomes, scaffolds, contigs, chloroplast/mitochondria/lamba, and other chromosomes.
 
 
 Jun 22, 2016
