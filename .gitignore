@@ -1,3 +1,4 @@
 *.pyc
-bedGraphToBigWig*
+bedGraphToBigWig
 bedSort
+bigWigToBedGraph
