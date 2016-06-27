@@ -55,8 +55,7 @@ def parseInputs( argv ):
 	
 	if bedFileStr.endswith('.bed') == False:
 		print( 'WARNING: bed file does not end with "bed"...check output results for correctness')
-	else:
-		processInputs( bedFileStr, source )
+	processInputs( bedFileStr, source )
 
 
 if __name__ == "__main__":

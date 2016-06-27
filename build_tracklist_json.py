@@ -120,11 +120,11 @@ def readInfoFile( trackInfoStr ):
 			info = lineAr[1:14]
 			outStr += generateSmRnaSeqText( info )
 		elif trackType == 'methyl':	# methylation verion 2
-			# label, key, category, track_height, bigwig, description, gff_run/source, source label, meta
-			info = lineAr[1:5] + lineAr[6:7] + lineAr[8:11] + [ lineAr[13] ]
+			# label, key, category, track_height, context, bigwig, description, gff_run/source, source label, meta
+			info = lineAr[1:7] + lineAr[8:11] + [ lineAr[13] ]
 			outStr += generateMethylationTextv2( info )
 		elif trackType == 'methylwig':	# methylation version 1
-			# label, key, category, traack_height, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
+			# label, key, category, track_height, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
 			info = lineAr[1:5] + lineAr[6:7] + lineAr[8:11] + [ lineAr[13] ]
 			outStr += generateMethylationTextv1( info )
 		elif trackType == 'peaks':
@@ -332,15 +332,15 @@ def generateMethylationTextv1( infoAr ):
 	outStr += tab(3) + '"urlTemplate" : "raw/methyl/{:s}",\n'.format( bigWig )
 	outStr += generateMeta( desc, sLabel, sLink, '','', meta )
 	outStr += tab(3) + '"type" : "MethylationPlugin/View/Track/Wiggle/MethylXYPlot",\n'
-	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
+	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
 	outStr += tab(2) + '}'
 	return outStr
 
 def generateMethylationTextv2( infoAr ):
 	'''
-		infoAr = [label, key, category, track_height, chip_type, bigwig, description, ggf_run/source, source_link, meta]
+		infoAr = [label, key, category, track_height, context, bigwig, description, ggf_run/source, source_link, meta]
 	'''
-	label, key, category, tHeight, bigWig, desc, sLabel, sLink, meta = infoAr
+	label, key, category, tHeight, mContext, bigWig, desc, sLabel, sLink, meta = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
@@ -351,10 +351,14 @@ def generateMethylationTextv2( infoAr ):
 	outStr += tab(3) + '"max_score" : 1,\n'
 	outStr += tab(3) + '"variance_band" : false,\n'
 	outStr += tab(3) + '"storeClass" : "MethylationPlugin/Store/SeqFeature/MethylBigWig",\n'
+	if mContext != '':
+		mAr = mContext.split(';')
+		mmAr = [ '"{:s}"'.format( x.lower() ) for x in mAr ]
+		outStr += tab(3) + '"context" : [ ' + ', '.join(mmAr) + ' ],\n'
 	outStr += tab(3) + '"urlTemplate" : "raw/methyl/{:s}",\n'.format( bigWig )
 	outStr += generateMeta( desc, sLabel, sLink, '','', meta )
 	outStr += tab(3) + '"type" : "MethylationPlugin/View/Track/Wiggle/MethylPlot",\n'
-	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
+	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
 	outStr += tab(2) + '}'
 	return outStr
 

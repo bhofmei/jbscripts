@@ -1,5 +1,6 @@
 import sys, math, multiprocessing, subprocess, os
 
+
 # Usage: python3 allc_to_bigwig_pe.py [-keep] [-sort] [-all] [-L=labels] [-p=num_proc] <chrm_sizes>  <allC_file> [allC_file]*
 
 # NOTE: allc file contains the methylation information for all chromosomes
