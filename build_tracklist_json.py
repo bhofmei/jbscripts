@@ -23,19 +23,18 @@ Track File: tab or comma separated with headers:
 trackType label key category height chip_type/meth_con/orthologs chip/meth/rna-seq_bigwig rna-seq_bam genome_version/description source_label/ggf_run source_link metadata_key_value
 '''
 
-def processInputs( trackInfoStr ):
+def processInputs( trackInfoStr, isQuiet ):
 	baseDir = os.path.dirname( trackInfoStr )
 	outFileStr = os.path.join( baseDir, 'trackList.json' )
 	outFile = open( outFileStr, 'w' )
 	print( 'Writing to trackList.json' )
 	outFile.write( getStarting() )
 	# read file
-	outStr, version = readInfoFile( trackInfoStr )
+	outStr, version = readInfoFile( trackInfoStr, isQuiet )
 	outFile.write( outStr )
 	outFile.write( getEnding( version ) )
 	outFile.close()
 	print( 'Done' )
-	
 
 def getStarting():
 	outStr = u'{\n'
@@ -55,7 +54,7 @@ def getEnding( version ):
 def tab( n ):
 	return u' '*(3*n)
 
-def readInfoFile( trackInfoStr ):
+def readInfoFile( trackInfoStr, isQuiet ):
 	
 	trackFile = open( trackInfoStr, 'rt' )
 	outStr = ''
@@ -88,71 +87,60 @@ def readInfoFile( trackInfoStr ):
 		elif outStr != '':
 			outStr += ',\n'
 		# handle type
+		if not isQuiet:
+			print( '-'+lineAr[1]+' ('+trackType+')' )
 		if trackType == 'dna':
-			print( '-'+lineAr[1]+' (DNA)' )
 			# label, key, category, genome_version, source_label, source_link
 			info = lineAr[1:4] + lineAr[8:11]
 			outStr += generateDNAtext( info )
 			
 		elif trackType == 'genes':
-			print( '-'+lineAr[1]+' (genes)' )
 			# label, key, category, track_height, orthologs, genome_version, source_label, source_link
 			info = lineAr[1:6] + lineAr[8:11]
 			outStr += generateGeneText( info )
 			
 		elif trackType in ['rnas', 'te', 'tes', 'transposons', 'repeats']:
 			#label, key, category, track_height, genome_version, source_label, source_link
-			print( '-'+lineAr[1]+' (rna/repeats)' )
 			info = lineAr[1:5] + lineAr[8:11]
 			outStr += generateRnaTeText( info )
 			
 		elif trackType == 'chip':
-			print( '-'+lineAr[1]+' (ChIP)' )
 			# label, key, category, track_height, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:7] + lineAr[8:14]
 			outStr += generateChipText( info )
 		elif trackType in ['reads','read']:
-			print( '-'+lineAr[1]+' (reads)' )
 			# label, key, category, track_height, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:6] + lineAr[7:14]
 			outStr += generateReadsText( info )
 		elif trackType == 'rnaseq':
-			print( '-'+lineAr[1]+' (RNA-Seq)' )
 			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:14]
 			outStr += generateRnaSeqText( info )
 		elif trackType in ['smrna','smrnaseq']:
-			print( '-'+lineAr[1]+' (smRNA-seq)' )
 			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:14]
 			outStr += generateSmRnaSeqText( info )
 		elif trackType == 'methyl':	# methylation verion 2
-			print( '-'+lineAr[1]+' (methyl)' )
 			# label, key, category, track_height, context, bigwig, description, gff_run/source, source label, meta
 			info = lineAr[1:7] + lineAr[8:11] + [ lineAr[13] ]
 			outStr += generateMethylationTextv2( info )
 		elif trackType == 'methylwig':	# methylation version 1
-			print( '-'+lineAr[1]+' (methyl v1)' )
 			# label, key, category, track_height, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
 			info = lineAr[1:5] + lineAr[6:7] + lineAr[8:11] + [ lineAr[13] ]
 			outStr += generateMethylationTextv1( info )
 		elif trackType == 'peaks':
-			print( '-'+lineAr[1]+' (peaks)' )
 			# label, key, category, track_height, chip_type, meta
 			info = lineAr[1:6] + [ lineAr[13] ]
 			outStr += generatePeakBed( info )
 		elif trackType in ['atac','atacseq']:
-			print( '-'+lineAr[1]+' (ATAC-seq)' )
 			# label, key, category, track_height, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:5] + [ lineAr[6] ] + lineAr[8:14]
 			outStr += generateAtacText( info )
 		elif trackType == 'rnastrand':
-			print( '-'+lineAr[1]+'(RNA-seq stranded)' )
 			# label, key, category, trackHeight, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:7] + lineAr[8:14]
 			outStr += generateRNAStrandText( info )
 		elif trackType == 'vcf':
-			print( '-'+lineAr[1]+' (VCF)' )
 			# label, key, category, trackHeight, bigwig, description, source, source_link, meta
 			info = lineAr[1:5] + [ lineAr[6] ] + lineAr[8:11] + [ lineAr[13] ]
 			outStr += generateVCFText( info )
@@ -606,12 +594,17 @@ def getOrthologFormat( orthoStr ):
 	
 		
 def parseInputs( argv ):
-	trackInfoStr = argv[0]
-	processInputs( trackInfoStr )
+	if argv[0] == '-q':
+		trackInfoStr = argv[1]
+		isQuiet = True
+	else:
+		trackInfoStr = argv[0]
+		isQuiet = False
+	processInputs( trackInfoStr, isQuiet )
 
 
 if __name__ == "__main__":
-	if len(sys.argv) != 2 :
-		print (" Usage: python2 build_tracklist_json.py <track_info_file>")
+	if len(sys.argv) < 2 :
+		print ("Usage: python2 build_tracklist_json.py [-q] <track_info_file>\n converts a specifically formatted CSV file to a trackList.json file\n use -q for quiet option")
 	else:
 		parseInputs( sys.argv[1:] )
