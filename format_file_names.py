@@ -126,7 +126,7 @@ def parseInputs( argv ):
 		elif argv[i] in ['-h','--h','--help','-help']:
 			printHelp()
 			exit()
-		elif argv.startswith( '-' ):
+		elif argv[i].startswith( '-' ):
 			print( '{:s} is not a valid parameter'.format( argv[i] ) )
 			exit()
 	# end for
@@ -134,7 +134,7 @@ def parseInputs( argv ):
 	processInputs( inFileStr, delim, colNum, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions )
 
 def printHelp():
-	print ("Usage: python3 format_file_names.py [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] [-d=delim] [-n=col_num] <infile> [infile]*\ncol_num is 0-indexed")
+	print ("Usage: python3 format_file_names.py [-c=chrm_opts] [-s=scaf_opts] [-t=contig_opts] [-l=clm_opts] [-o=other_opts] [-d=delim] [-n=col_num] <infile>\ncol_num is 0-indexed")
 	print( 'Maintains the same underlying data for input file but changes the\nchromsome names base on parameters' )
 	print( 'Required:' )
 	print( 'in_file\tpath to data file\n\tinfile must be .csv or .tsv unless delim is specified' )
