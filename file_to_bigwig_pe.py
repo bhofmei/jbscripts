@@ -13,7 +13,7 @@ def processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, numProc ):
 	
 	print( 'Begin processing files with {:d} processors'.format( numProc ) )
 	pool = multiprocessing.Pool( processes=numProc )
-	results = [ pool.apply_async( processFile, args=(bedFileStr, chrmFileStr, keepTmp, isStrand) ) for bedFileStr in bedFileStrAr ]
+	results = [ pool.apply_async( processFile, args=(bedFileStr, chrmFileStr, keepTmp, isScale) ) for bedFileStr in bedFileStrAr ]
 	suc = [ p.get() for p in results ]
 	print( 'Done.' )
 	
@@ -43,7 +43,7 @@ def processFile( bedFileStr, chrmFileStr, keepTmp, isScale ):
 	
 	# bed to bedGraph
 	bedGraphFile = convertToBedGraph( bedFileStr, chrmFileStr, baseName, scaleVal )
-		subAr = [ '' ]
+	subAr = [ '' ]
 	
 	rmFile += bedGraphFile
 	
@@ -156,11 +156,6 @@ def parseInputs( argv ):
 		elif argv[i].startswith( '-' ):
 			print( 'ERROR: {:s} is not a valid option'.format( argv[i] ) )
 			exit()
-	
-	# can't have union and not strand
-	if isUnion and isStrand == False:
-		print( 'ERROR: union should only be used with strand' )
-		exit()
 		
 	chrmFileStr = argv[startInd]
 	bedFileStrAr = []
