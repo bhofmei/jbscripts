@@ -36,7 +36,7 @@ def getFormattingScheme( ):
 def determineType( name ):
 	
 	n = name.lower()
-	if n in ['chrc', 'chrm', 'chrl', 'chloroplast', 'mitochondria', 'lambda', 'chrmt', 'c', 'm', 'l', 'mt' ]:
+	if n in ['chrc', 'chrm', 'chrl', 'chloroplast', 'mitochondria', 'lambda', 'chrmt', 'c', 'm', 'l', 'mt', 'pt' ]:
 		return 'clm'
 	elif n.startswith( 'chr' ):
 		return 'chr'
@@ -195,9 +195,9 @@ def decodeCLMOptions( options ):
 
 def formatCLM( name, mtType, chType, lmType ):
 	n=name.lower()
-	if n in ['chrc', 'chloroplast','c']:
+	if n in ['chrc', 'chloroplast','c', 'pt','chrpt']:
 		return chType
-	elif n in ['chrm','mitochondria','chrmt','m']:
+	elif n in ['chrm','mitochondria','chrmt','m', 'mt']:
 		return mtType
 	elif n in ['chrl','lambda','l']:
 		return lmType
