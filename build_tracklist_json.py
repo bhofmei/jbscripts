@@ -1,7 +1,7 @@
 import sys, os
 from io import open
 
-# Usage: python build_tracklist_json.py <track_info_file>
+# Usage: python build_tracklist_json.py [-q] <track_info_file>
 
 '''
 info needed for
@@ -203,7 +203,7 @@ def generateGeneText( infoAr ):
 		outStr += tab(3) + '"style" : {\n' + tab(4) + '"description" : "description,note"\n' + tab(3) +'},\n'
 
 	# check orthologs
-	if infoAr[3] != "":
+	if orthologs != "":
 		orthoAr = orthologs.split(';')
 		for ortho in orthoAr:
 			outStr += generateOrtholog( ortho )
@@ -585,7 +585,7 @@ def getColors( typeStr ):
 
 def getOrthologFormat( orthoStr ):
 	strDict = { 'poplar': 'Ptrichocarpa', 'arabidopsis':'Athaliana',
-		'eutrema':'Esalsugineum', 'maize':'Zmays' }
+		'eutrema':'Esalsugineum', 'maize':'Zmays', 'bdistachyon': 'Bdistachyon' }
 	outStr = strDict.get( orthoStr )
 	if outStr == None:
 		print( 'WARNING: ortholog name {:s} not recognized'.format( orthoStr ) )
