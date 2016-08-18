@@ -73,14 +73,14 @@ def readInfoFile( trackInfoStr, isQuiet ):
 		if len(lineAr) < 2:
 			continue
 		# (0) trackType (1) label (2) key (3) category (4) height
-		# (5) chip_type/orthologs/reads_type
+		# (5) chip_type/orthologs/reads_type/color
 		# (6) chip/meth/rna-seq_bigwig (7) reads/rna-seq_bam
 		# (8) genome_version/description
 		# (9) source_label/ggf_run (10) source_link
 		# (11) mapping_rate (12) percent_remaining
 		# (13) metadata_key_value
 		trackType = lineAr[0].lower()
-		if trackType not in ['dna', 'genes', 'rnas', 'te', 'tes', 'transposons', 'repeats', 'chip', 'rnaseq', 'smrna','smrnaseq','methyl','methylwig', 'peaks', 'atac', 'atacseq', 'reads', 'read', 'rnastrand', 'vcf']:
+		if trackType not in ['dna', 'genes', 'rnas', 'te', 'tes', 'transposons', 'repeats', 'chip', 'rnaseq', 'smrna','smrnaseq','methyl','methylwig', 'peaks', 'atac', 'atacseq', 'reads', 'read', 'rnastrand', 'vcf','anno']:
 			print( 'WARNING: {:s} is not a correct track type. Skipping...'.format( lineAr[0] ) )
 			continue
 		# commas for previous track
@@ -103,6 +103,11 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			#label, key, category, track_height, genome_version, source_label, source_link
 			info = lineAr[1:5] + lineAr[8:11]
 			outStr += generateRnaTeText( info )
+		
+		elif trackType == 'anno':
+			#label, key, category, track_height, chip_type, genome_version, source_label, source_link, meta
+			info = lineAr[1:6] + lineAr[8:11] + [ lineAr[13] ]
+			outStr += generateAnnoText( info )
 			
 		elif trackType == 'chip':
 			# label, key, category, track_height, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
@@ -253,6 +258,31 @@ def generateRnaTeText( infoAr ):
 	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
 	outStr += tab(3) + '"type" : "CanvasFeatures"'
 	outStr += generateGenomeSource( gVersion, sLabel, sLink )
+	outStr += tab(2) + '}'
+	return outStr
+	
+def generateAnnoText( infoAr ):
+	'''
+		infoAr = [label, key, category, track_height, color, genome_version, source_label, source_link, meta]
+	'''
+	label, key, category, tHeight, iColor, gVersion, sLabel, sLink , meta= infoAr
+	
+	color = getColors( (label if iColor == '' else iColor) )
+	outStr = tab(2) + '{\n'
+	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
+	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	# style
+	outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
+	# basics
+	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/NCList",\n'
+	outStr += tab(3) + '"trackType" : "CanvasFeatures",\n'
+	outStr += tab(3) + '"maxHeight" : {:s},\n'.format( '400' if tHeight == '' else tHeight )
+	outStr += tab(3) + '"maxFeatureScreenDensity" : 0.1,\n'
+	outStr += tab(3) + '"urlTemplate" : "tracks/'+label+'/{refseq}/trackData.json",\n'
+	outStr += tab(3) + '"compress" : 0,\n'
+	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
+	outStr += generateMeta( gVersion, sLabel, sLink, '', '', meta )
+	outStr += tab(3) + '"type" : "CanvasFeatures"'
 	outStr += tab(2) + '}'
 	return outStr
 	
@@ -573,7 +603,7 @@ def getColors( typeStr ):
 		'chh':'#1e90ff','h3k27m3':'#617ed7','h3t32':'#32a2a2',
 		'h3k36m1':'#AE2020','h3k36m2':'#D42727', 'h3k4m1':'#6A228D',
 		'h3k4m2':'#872CB3','sdg7':'#2e8b57','basej':'#228b22', 
-		'h3t32g' :'#00688b', 'methyl':'#a1a1a1' }
+		'h3t32g' :'#00688b', 'methyl':'#a1a1a1','h2ax-elements':'#daa520' }
 	outStr = typeDict.get( typeStr.lower() )
 	if outStr == None:
 		if typeStr.lower() in colors:
