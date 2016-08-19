@@ -42,7 +42,7 @@ def processFile( bedFileStr, chrmFileStr, keepTmp, isScale ):
 	
 	# bed to bedGraph
 	bedGraphFile = convertToBedGraph( bedFileStr, chrmFileStr, baseName, scaleVal )
-	sortBedFile( bedGraphFile )
+	sortBedFile( bedGraphFile[0] )
 	subAr = [ '' ]
 	
 	rmFile += bedGraphFile
