@@ -39,10 +39,10 @@ def processFile( bedFileStr, chrmFileStr, keepTmp, isScale ):
 		scaleVal = getScaleValue( bedFileStr )
 	
 	# sort bedfile
-	sortBedFile( bedFileStr )
 	
 	# bed to bedGraph
 	bedGraphFile = convertToBedGraph( bedFileStr, chrmFileStr, baseName, scaleVal )
+	sortBedFile( bedGraphFile )
 	subAr = [ '' ]
 	
 	rmFile += bedGraphFile
@@ -84,7 +84,7 @@ def getScaleValue( bedFileStr ):
 	return float( readCountStr.split()[0] ) / 1000000
 	
 def sortBedFile( bedFileStr ):
-	print( 'Sorting bed file' )
+	print( 'Sorting bedGraph file' )
 	command = 'bedSort {:s} {:s}'.format( bedFileStr, bedFileStr )
 	subprocess.call( command, shell=True )
 	
