@@ -40,8 +40,11 @@ def readOrthoFile( orthoFileStr, cols, useLabels ):
 	
 	orthoFile = open( orthoFileStr, 'r' )
 	firstLine = not useLabels
+	mCol = max(cols)
 	for line in orthoFile:
 		lineAr = line.rstrip().split('\t')
+		if len(lineAr) <= mCol:
+			continue
 		if firstLine:
 			firstLine = False
 			rInd1 = lineAr[0].rfind( '_' )
