@@ -80,7 +80,7 @@ def readInfoFile( trackInfoStr, isQuiet ):
 		# (11) mapping_rate (12) percent_remaining
 		# (13) metadata_key_value
 		trackType = lineAr[0].lower()
-		if trackType not in ['dna', 'genes', 'rnas', 'te', 'tes', 'transposons', 'repeats', 'chip', 'rnaseq', 'smrna','smrnaseq','methyl','methylwig', 'peaks', 'atac', 'atacseq', 'reads', 'read', 'rnastrand', 'vcf','anno']:
+		if trackType not in ['dna', 'genes', 'rnas', 'te', 'tes', 'transposons', 'repeats', 'chip', 'rnaseq', 'rnaseqpe','smrna','smrnaseq','methyl','methylwig', 'peaks', 'atac', 'atacseq', 'reads', 'read', 'rnastrand', 'vcf','anno']:
 			print( 'WARNING: {:s} is not a correct track type. Skipping...'.format( lineAr[0] ) )
 			continue
 		# commas for previous track
@@ -403,11 +403,11 @@ def generateMethylationTextv2( infoAr ):
 
 def generateRnaSeqText( infoAr ):
 	'''
-		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta]
+		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta, isPE]
 	'''
 	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta, isPE = infoAr
 	if height == "":
-		maxheight = "1000"
+		maxheight = "7000"
 		minheight = '0'
 	else:
 		heightAr = height.split('#')
