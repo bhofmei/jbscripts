@@ -118,8 +118,12 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			info = lineAr[1:6] + lineAr[7:14]
 			outStr += generateReadsText( info )
 		elif trackType == 'rnaseq':
+			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta, isPE
+			info = lineAr[1:14] + [ False ]
+			outStr += generateRnaSeqText( info )
+		elif trackType == 'rnaseqpe':
 			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:14]
+			info = lineAr[1:14] + [ True ]
 			outStr += generateRnaSeqText( info )
 		elif trackType in ['smrna','smrnaseq']:
 			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
@@ -401,7 +405,7 @@ def generateRnaSeqText( infoAr ):
 	'''
 		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta]
 	'''
-	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta, isPE = infoAr
 	if height == "":
 		maxheight = "1000"
 		minheight = '0'
@@ -428,7 +432,9 @@ def generateRnaSeqText( infoAr ):
 	outStr += tab(3) + '},\n'
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BAM",\n'
-	outStr += tab(3) + '"maxFeatureScreenDensity" : 2,\n'
+	#outStr += tab(3) + '"maxFeatureScreenDensity" : 2,\n'
+	if isPE:
+		outStr += tab(3) + '"useReverseTemplateOption": true,\n'
 	outStr += tab(3) + '"maxHeight" : {:s},\n'.format( '400' if tHeight == '' else tHeight )
 	outStr += tab(3) + '"urlTemplate" : "raw/rna/{:s}",\n'.format( bam )
 	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
