@@ -1,23 +1,24 @@
 import sys, math, glob, multiprocessing, subprocess, os, bisect, random
 
-# Usage: file_to_bigwig_pe.py [-keep] [-scale] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*
+# Usage: file_to_bigwig_pe.py [-keep] [-scale] [-strand] [-sort] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*
 
 NUMPROC=1
 
-def processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, numProc ):
+def processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, isStrand, isSort, numProc ):
 	if len(bedFileStrAr)==1:
 		print( 'Input File: {:s}'.format( bedFileStrAr[0] ) )
 	else:
 		print( 'Input Files: {:s}'.format( ', '.join( bedFileStrAr ) ) )
-	print('Chromosome sizes file: {:s}\nKeep temporary files: {:s}\nScale by library size: {:s}'.format( chrmFileStr, str( keepTmp ), str( isScale) ) )
-	
+	print('Chromosome sizes file: {:s}\nKeep temporary files: {:s}\nScale by library size: {:s}\nStranded: {:s}\nSorting: {:s}'.format( chrmFileStr, str( keepTmp ), str( isScale), str(isStrand), str(isSort) ) )
+	if len(bedFileStrAr) > numProc:
+		numProc = len(bedFileStrAr)
 	print( 'Begin processing files with {:d} processors'.format( numProc ) )
 	pool = multiprocessing.Pool( processes=numProc )
-	results = [ pool.apply_async( processFile, args=(bedFileStr, chrmFileStr, keepTmp, isScale) ) for bedFileStr in bedFileStrAr ]
+	results = [ pool.apply_async( processFile, args=(bedFileStr, chrmFileStr, keepTmp, isScale, isStrand, isSort) ) for bedFileStr in bedFileStrAr ]
 	suc = [ p.get() for p in results ]
 	print( 'Done.' )
 	
-def processFile( bedFileStr, chrmFileStr, keepTmp, isScale ):
+def processFile( bedFileStr, chrmFileStr, keepTmp, isScale, isStrand, isSort ):
 	baseDir = os.path.dirname( bedFileStr )
 	ind = bedFileStr.rfind('.')
 	baseName = bedFileStr[:ind]
@@ -38,24 +39,28 @@ def processFile( bedFileStr, chrmFileStr, keepTmp, isScale ):
 	if isScale:
 		scaleVal = getScaleValue( bedFileStr )
 	
-	# sort bedfile
-	
 	# bed to bedGraph
-	bedGraphFile = convertToBedGraph( bedFileStr, chrmFileStr, baseName, scaleVal )
-	sortBedFile( bedGraphFile[0] )
-	subAr = [ '' ]
+	if isStrand:
+		bedGraphFileAr = convertToBedGraphStrand( bedFileStr, chrmFileStr, baseName, scaleVal )
+	else:	
+		bedGraphFileAr = convertToBedGraph( bedFileStr, chrmFileStr, baseName, scaleVal )
 	
-	rmFile += bedGraphFile
-	
-	# convert to bigwig
-	bigWigFile = convertToBigWig( bedGraphFile, chrmFileStr, baseName, subAr )
+	rmFile += bedGraphFileAr
+	bigWigFileAr = []
+	for bedGraphFile in bedGraphFileAr:
+		# sort if necessary
+		if isSort:
+			sortBedFile( bedGraphFile )
+		# convert to bigwig
+		bigWigFile = convertToBigWig( bedGraphFile, chrmFileStr )
+		bigWigFileAr += [bigWigFile]
 	
 	if keepTmp == False:
 		print( 'Removing temporary files' )
 		for f in rmFile:
 			os.remove(f)	
 	
-	print( 'Output written to {:s}'.format( ' & '.join(bigWigFile) ) )
+	print( 'Output written to {:s}'.format( ' & '.join(bigWigFileAr) ) )
 
 def cleanBedFile( bedFileStr, outFileStr, chrmList ):
 	'''
@@ -84,7 +89,7 @@ def getScaleValue( bedFileStr ):
 	return float( readCountStr.split()[0] ) / 1000000
 	
 def sortBedFile( bedFileStr ):
-	print( 'Sorting bedGraph file' )
+	print( 'Sorting bedGraph', os.path.basename(bedFileStr) )
 	command = 'bedSort {:s} {:s}'.format( bedFileStr, bedFileStr )
 	subprocess.call( command, shell=True )
 	
@@ -96,9 +101,9 @@ def convertToBedGraph( bedFileStr, chrmFileStr, baseName, scaleVal ):
 	return [bedGraphFile]
 
 def convertToBedGraphStrand( bedFileStr, chrmFileStr, baseName, scaleVal ):
-	print( 'Creating strand-specific bedGraph of {:s}'.format( os.path.basename(bedFileStr) ) )
-	bedGraphFilePlus = '{:s}_scale_plus.bedGraph'.format( baseName )
-	bedGraphFileMinus = '{:s}_scale_minus.bedGraph'.format( baseName )
+	print( 'Creating strand-specific bedGraphs of {:s}'.format( os.path.basename(bedFileStr) ) )
+	bedGraphFilePlus = '{:s}.bedGraph.plus'.format( baseName )
+	bedGraphFileMinus = '{:s}.bedGraph.minus'.format( baseName )
 	
 	command = 'bedtools genomecov -bga -strand + -scale {:.2f} -i {:s} -g {:s} > {:s}'.format(scaleVal, bedFileStr, chrmFileStr, bedGraphFilePlus )
 	subprocess.call( command, shell=True )
@@ -122,26 +127,35 @@ def negativeBedGraph( bedGraphFileMinus, bedGraphTmp ):
 	tmpFile.close()
 	bedGraphFile.close()
 	
-def convertToBigWig( bedGraphFileAr, chrmFileStr, baseName, subAr ):
+def convertToBigWig( bedGraphStr, chrmFileStr ):
 	
-	print( 'Converting {:s} to bigWig'.format( '&'.join( bedGraphFileAr) ) )
-	bwFiles = [ '{:s}{:s}.bw'.format(baseName, x) for x in subAr ]
-	for i in range(len(bedGraphFileAr)):
-		command = 'bedGraphToBigWig {:s} {:s} {:s}'.format( bedGraphFileAr[i], chrmFileStr, bwFiles[i] )
-		subprocess.call( command, shell=True )
-	return bwFiles
+	print( 'Converting {:s} to bigWig'.format( os.path.basename( bedGraphStr) ) )
+	bigWigStr = bedGraphStr.replace( '.bedGraph', '.bw' )
+	#print( bigWigStr )
+	# bedGraphToBigWig in.bedGraph chrom.sizes out.bw
+	command = 'bedGraphToBigWig {:s} {:s} {:s}'.format( bedGraphStr, chrmFileStr, bigWigStr )
+	subprocess.call( command, shell=True )
+	return bigWigStr
 
 def parseInputs( argv ):
 	keepTmp = False
 	isScale = False
+	isStrand = False
+	isSort = False
 	numProc = NUMPROC
 	startInd = 0
-	for i in range(min(7,len(argv)-2)):
+	for i in range(min(5,len(argv)-2)):
 		if argv[i] == '-keep':
 			keepTmp = True
 			startInd += 1
 		elif argv[i] == '-scale':
 			isScale = True
+			startInd += 1
+		elif argv[i] == '-strand':
+			isStrand = True
+			startInd += 1
+		elif argv[i] == '-sort':
+			isSort = True
 			startInd += 1
 		elif argv[i].startswith( '-p=' ):
 			try:
@@ -162,10 +176,10 @@ def parseInputs( argv ):
 	for j in range(startInd+1, len(argv)):
 		bedFileStrAr += [ argv[j] ]
 	
-	processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, numProc )
+	processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, isStrand, isSort, numProc )
 	
 def printHelp():
-	print ("Usage: python3 file_to_bigwig_pe.py [-keep] [-scale] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*")
+	print ("Usage: python3 file_to_bigwig_pe.py [-keep] [-scale] [-strand] [-sort] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*")
 	print( 'Convert BED/BAM file to bigWig format for coverage view' )
 	print( 'Note: bedtools, bedGraphToBigWig, and bedSort programs must be in the path' )
 	print( 'Required:' )
@@ -175,6 +189,8 @@ def printHelp():
 	print( 'Optional:' )
 	print( '-keep\t\tkeep intermediate files' )
 	print( '-scale\t\tscale the bigwig values by total number of reads in file' )
+	print( '-strand\t\toutput reads from plus and minus strand to separate files' )
+	print( '-sort\t\tsort bedgraph; use when bigwig conversion fails' )
 	print( '-p=num_proc\tnumber of processors to use [default 1]' )
 
 if __name__ == "__main__":

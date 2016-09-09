@@ -3,6 +3,9 @@ from io import open
 
 # Usage: python build_tracklist_json.py [-q] <track_info_file>
 
+COLOR_AR = ['blue', 'red', 'orange', 'yellow', 'purple', 'green', 'black', 'gray', 'cyan', 'magenta', 'darkred', 'darkblue' ]
+COMP_COLOR_AR = ['red', 'blue', 'darkviolet', 'rebeccapurple', 'limegreen', 'fuchsia', 'deepskyblue', 'skyblue', 'magenta', 'cyan', 'darkturquoise', 'mediumvioletred' ]
+
 '''
 info needed for
 # header is version
@@ -55,6 +58,12 @@ def tab( n ):
 	return u' '*(3*n)
 
 def readInfoFile( trackInfoStr, isQuiet ):
+
+	#trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe', 'rnaseq-pe-str', 'rnaseq-str'], 'smrna': ['smrna','smrnaseq', 'smrna-str', 'smrnaseq-str'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf']}
+	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe'], 'smrna': ['smrna','smrnaseq'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf']}
+	trackTypeList = []
+	for x in trackTypeDict.keys():
+		trackTypeList += trackTypeDict[x]
 	
 	trackFile = open( trackInfoStr, 'rt' )
 	outStr = ''
@@ -80,7 +89,8 @@ def readInfoFile( trackInfoStr, isQuiet ):
 		# (11) mapping_rate (12) percent_remaining
 		# (13) metadata_key_value
 		trackType = lineAr[0].lower()
-		if trackType not in ['dna', 'genes', 'rnas', 'te', 'tes', 'transposons', 'repeats', 'chip', 'rnaseq', 'rnaseqpe','smrna','smrnaseq','methyl','methylwig', 'peaks', 'atac', 'atacseq', 'reads', 'read', 'rnastrand', 'vcf','anno']:
+		
+		if trackType not in trackTypeList:
 			print( 'WARNING: {:s} is not a correct track type. Skipping...'.format( lineAr[0] ) )
 			continue
 		# commas for previous track
@@ -89,91 +99,81 @@ def readInfoFile( trackInfoStr, isQuiet ):
 		# handle type
 		if not isQuiet:
 			print( '-'+lineAr[1]+' ('+trackType+')' )
-		if trackType == 'dna':
+		if trackType in trackTypeDict['dna']:
 			# label, key, category, genome_version, source_label, source_link
 			info = lineAr[1:4] + lineAr[8:11]
 			outStr += generateDNAtext( info )
 			
-		elif trackType == 'genes':
+		elif trackType in trackTypeDict['genes']:
 			# label, key, category, track_height, orthologs, genome_version, source_label, source_link
 			info = lineAr[1:6] + lineAr[8:11]
 			outStr += generateGeneText( info )
 			
-		elif trackType in ['rnas', 'te', 'tes', 'transposons', 'repeats']:
+		elif trackType in trackTypeDict['rnate']:
 			#label, key, category, track_height, genome_version, source_label, source_link
 			info = lineAr[1:5] + lineAr[8:11]
 			outStr += generateRnaTeText( info )
 		
-		elif trackType == 'anno':
+		elif trackType in trackTypeDict['anno']:
 			#label, key, category, track_height, chip_type, genome_version, source_label, source_link, meta
 			info = lineAr[1:6] + lineAr[8:11] + [ lineAr[13] ]
 			outStr += generateAnnoText( info )
 			
-		elif trackType == 'chip':
+		elif trackType in trackTypeDict['chip']:
 			# label, key, category, track_height, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:7] + lineAr[8:14]
+			# determine stranded
+			info += [ '-str' in trackType ]
 			outStr += generateChipText( info )
-		elif trackType in ['reads','read']:
+		
+		elif trackType in trackTypeDict['atac']:
+			# label, key, category, track_height, color, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:7]+ lineAr[8:14]
+			info += [ '-str' in trackType ]
+			outStr += generateAtacText( info )
+			
+		elif trackType in trackTypeDict['reads']:
 			# label, key, category, track_height, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:6] + lineAr[7:14]
 			outStr += generateReadsText( info )
-		elif trackType == 'rnaseq':
+		
+		elif trackType in trackTypeDict['rnaseq']:
 			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta, isPE
-			info = lineAr[1:14] + [ False ]
+			info = lineAr[1:14]
+			# check PE
+			info +=  ['pe' in trackType ]
+			# check strand
+			info += [ '-str' in trackType ]
 			outStr += generateRnaSeqText( info )
-		elif trackType == 'rnaseqpe':
-			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:14] + [ True ]
-			outStr += generateRnaSeqText( info )
-		elif trackType in ['smrna','smrnaseq']:
+			
+		elif trackType in trackTypeDict['smrna']:
 			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:14]
 			outStr += generateSmRnaSeqText( info )
-		elif trackType == 'methyl':	# methylation verion 2
-			# label, key, category, track_height, context, bigwig, description, gff_run/source, source label, meta
-			info = lineAr[1:7] + lineAr[8:11] + [ lineAr[13] ]
-			outStr += generateMethylationTextv2( info )
-		elif trackType == 'methylwig':	# methylation version 1
-			# label, key, category, track_height, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
-			info = lineAr[1:5] + lineAr[6:7] + lineAr[8:11] + [ lineAr[13] ]
-			outStr += generateMethylationTextv1( info )
-		elif trackType == 'peaks':
+		
+		elif trackType in trackTypeDict['methyl']:	
+			if trackType == 'methyl':	# methylation verion 2
+				# label, key, category, track_height, context, bigwig, description, gff_run/source, source label, meta
+				info = lineAr[1:7] + lineAr[8:11] + [ lineAr[13] ]
+				outStr += generateMethylationTextv2( info )
+			elif trackType == 'methylwig':	# methylation version 1
+				# label, key, category, track_height, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
+				info = lineAr[1:5] + lineAr[6:7] + lineAr[8:11] + [ lineAr[13] ]
+				outStr += generateMethylationTextv1( info )
+		
+		elif trackType in trackTypeDict['peaks']:
 			# label, key, category, track_height, chip_type, meta
 			info = lineAr[1:6] + [ lineAr[13] ]
 			outStr += generatePeakBed( info )
-		elif trackType in ['atac','atacseq']:
-			# label, key, category, track_height, color, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:7]+ lineAr[8:14]
-			outStr += generateAtacText( info )
-		elif trackType == 'rnastrand':
-			# label, key, category, trackHeight, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:7] + lineAr[8:14]
-			outStr += generateRNAStrandText( info )
-		elif trackType == 'vcf':
+
+		elif trackType in trackTypeDict['vcf']:
 			# label, key, category, trackHeight, bigwig, description, source, source_link, meta
 			info = lineAr[1:5] + [ lineAr[6] ] + lineAr[8:11] + [ lineAr[13] ]
 			outStr += generateVCFText( info )
+	
 	# end for line
 	trackFile.close()
 	return outStr, version
-
-def generateDNAtext( infoAr ):
-	'''
-		infoAr = [label, key, category, trackHeight, genome_version, source_label, source_link]
-		infoAr[i] == '' if info not available
-	'''
-	label, key, category, gVersion, sLabel, sLink = infoAr
-	outStr = tab(2) + '{\n'
-	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
-	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
-	outStr += tab(3) + '"chunkSize" : 20000,\n' + tab(3) + '"storeClass" : "JBrowse/Store/Sequence/StaticChunked",\n'
-	outStr += tab(3) + '"urlTemplate" : "seq/{refseq_dirpath}/{refseq}-",\n'
-	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
-	outStr += tab(3) + '"type" : "SequenceTrack"'
-	# genome version and source
-	outStr += generateGenomeSource( gVersion, sLabel, sLink )
-	outStr += tab(2) + '}'
-	return outStr
 
 def generateGenomeSource( genomeVersion, sourceLabel, sourceLink ):
 	outStr = ',\n'
@@ -193,6 +193,63 @@ def generateGenomeSource( genomeVersion, sourceLabel, sourceLink ):
 		outStr += ',\n' + tab(3) + '"fmtMetaValue_Source" : "function(source) { return \' <a href='+sourceLink+'>'+sourceLabel+'</a>\';}"\n'
 	else:
 		outStr += '\n'
+	return outStr
+
+def generateMeta( description, sLabel, sLink, mapRate, perRemain, meta ):
+	"""
+		generate metadata information including source formating if necessary
+		always ends with comma
+	"""
+	if description == "" and sLabel == "" and sLink == "" and meta == "" and mapRate == "" and perRemain == "":
+		return '\n'
+	before = ""
+	outStr = tab(3) + '"metadata" : {'
+	# ggf run or source
+	if sLabel.startswith( 'run' ):
+		outStr += '\n' +tab(4) + '"GGF Run" : "{:s}"'.format( sLabel )
+	elif sLink != "":
+		outStr +='\n' + tab(4) + '"Source" : "{:s}"'.format( sLabel )
+		before = tab(3) + '"fmtMetaValue_Source" : "function(source) { return \' <a href='+sLink+'>'+sLabel+'</a>\';}",\n'
+	elif sLabel != "":
+		outStr += '\n' + tab(4) + '"Source" : "{:s}"'.format( sLabel )
+	# description
+	if description != "":
+		if sLabel != '':
+			outStr += ','
+		outStr += '\n' + tab(4) + '"Description" : "{:s}"'.format( description)
+	# mapping rate
+	if mapRate != "":
+		if sLabel != "" or description != "":
+			outStr += ','
+		outStr += '\n' + tab(4) + '"Read Mapping Rate" : "{:s}%"'.format( mapRate )
+	if perRemain != "":
+		if sLabel != "" or description != "" or mapRate != "":
+			outStr += ','
+		outStr += '\n' + tab(4) + '"Percent Reads Remaining" : "{:s}%"'.format( perRemain )
+	# other metadata
+	if meta != "":
+		if description!= '' or sLabel != '' or mapRate != '' or perRemain != '':
+			outStr += ','
+		outStr += parseMetaKeys( meta )
+	outStr += '\n' + tab(3) + '},\n'
+	return before + outStr
+	
+def generateDNAtext( infoAr ):
+	'''
+		infoAr = [label, key, category, trackHeight, genome_version, source_label, source_link]
+		infoAr[i] == '' if info not available
+	'''
+	label, key, category, gVersion, sLabel, sLink = infoAr
+	outStr = tab(2) + '{\n'
+	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
+	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	outStr += tab(3) + '"chunkSize" : 20000,\n' + tab(3) + '"storeClass" : "JBrowse/Store/Sequence/StaticChunked",\n'
+	outStr += tab(3) + '"urlTemplate" : "seq/{refseq_dirpath}/{refseq}-",\n'
+	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
+	outStr += tab(3) + '"type" : "SequenceTrack"'
+	# genome version and source
+	outStr += generateGenomeSource( gVersion, sLabel, sLink )
+	outStr += tab(2) + '}'
 	return outStr
 	
 def generateGeneText( infoAr ):
@@ -294,64 +351,66 @@ def generateChipText( infoAr ):
 	'''
 		infoAr = [label, key, category, chip_type, bigwig, description, ggf_run/source, source_link, meta]
 	'''
-	label, key, category, tHeight, chipType, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
-	color = getColors( chipType)
+	label, key, category, tHeight, chipType, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta, stranded = infoAr
+	if stranded:
+		colorAr =  getStrandedColors( chipType )
+	else:
+		color = getColors( chipType )
+	outStr = tab(2) + '{\n'
+	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
+	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	outStr += tab(3) + '"style" : {\n'
+	outStr += tab(4) + '"clip_marker_color" : "black",\n'
+	if stranded and colorAr != None:
+		outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( colorAr[0] )
+		outStr += tab(4) + '"neg_color" : "{:s}",\n'.format( colorAr[1] )
+	elif not stranded:
+		outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
+	outStr += tab(4) + '"height" : {:s}\n'.format( '50' if tHeight == '' else tHeight )
+	outStr += tab(3) + '},\n'
+	outStr += tab(3) + '"variance_band" : false,\n'
+	if stranded:
+		outStr += tab(3) + '"storeClass" : "StrandedPlotPlugin/Store/SeqFeature/StrandedBigWig",\n'
+		outStr += tab(3) + '"type" : "StrandedPlotPlugin/View/Track/Wiggle/StrandedXYPlot",\n'
+	else:
+		outStr += tab(3) + '"autoscale": "clipped_global",\n'
+		outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
+		outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
+		outStr += tab(3) + '"min_score" : 0,\n' 
+	
+	outStr += tab(3) + '"urlTemplate" : "raw/chip/{:s}",\n'.format( bigWig )
+	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
+	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
+	outStr += tab(2) + '}'
+	return outStr
+
+def generateAtacText( infoAr ):
+	'''label, key, category, tHeight, cColor, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	if cColor == '':
+		color = 'gray24'
+	else:
+		color = getColors( cColor )
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	outStr += tab(3) + '"style" : {\n'
 	outStr += tab(4) + '"clip_marker_color" : "black",\n'
 	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"height" : {:s}\n'.format( '50' if tHeight == '' else tHeight )
+	outStr += tab(4) + '"height" : {:s}\n'.format('50' if tHeight == '' else tHeight)
 	outStr += tab(3) + '},\n'
 	outStr += tab(3) + '"variance_band" : false,\n'
 	outStr += tab(3) + '"autoscale": "clipped_global",\n'
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
-	outStr += tab(3) + '"urlTemplate" : "raw/chip/{:s}",\n'.format( bigWig )
+	outStr += tab(3) + '"urlTemplate" : "raw/atac/{:s}",\n'.format( bigWig )
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
 	outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
 	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
 	outStr += tab(3) + '"min_score" : 0\n' + tab(2) + '}'
+	return outStr'''
+	# atac-seq is the same as chip except urlTemplate
+	outStr = generateChipText( infoAr )
+	outStr = outStr.replace( 'raw/chip/', 'raw/atac/' )
 	return outStr
-
-def generateMeta( description, sLabel, sLink, mapRate, perRemain, meta ):
-	"""
-		generate metadata information including source formating if necessary
-		always ends with comma
-	"""
-	if description == "" and sLabel == "" and sLink == "" and meta == "" and mapRate == "" and perRemain == "":
-		return '\n'
-	before = ""
-	outStr = tab(3) + '"metadata" : {'
-	# ggf run or source
-	if sLabel.startswith( 'run' ):
-		outStr += '\n' +tab(4) + '"GGF Run" : "{:s}"'.format( sLabel )
-	elif sLink != "":
-		outStr +='\n' + tab(4) + '"Source" : "{:s}"'.format( sLabel )
-		before = tab(3) + '"fmtMetaValue_Source" : "function(source) { return \' <a href='+sLink+'>'+sLabel+'</a>\';}",\n'
-	elif sLabel != "":
-		outStr += '\n' + tab(4) + '"Source" : "{:s}"'.format( sLabel )
-	# description
-	if description != "":
-		if sLabel != '':
-			outStr += ','
-		outStr += '\n' + tab(4) + '"Description" : "{:s}"'.format( description)
-	# mapping rate
-	if mapRate != "":
-		if sLabel != "" or description != "":
-			outStr += ','
-		outStr += '\n' + tab(4) + '"Read Mapping Rate" : "{:s}%"'.format( mapRate )
-	if perRemain != "":
-		if sLabel != "" or description != "" or mapRate != "":
-			outStr += ','
-		outStr += '\n' + tab(4) + '"Percent Reads Remaining" : "{:s}%"'.format( perRemain )
-	# other metadata
-	if meta != "":
-		if description!= '' or sLabel != '' or mapRate != '' or perRemain != '':
-			outStr += ','
-		outStr += parseMetaKeys( meta )
-	outStr += '\n' + tab(3) + '},\n'
-	return before + outStr
 
 def generateMethylationTextv1( infoAr ):
 	'''
@@ -405,7 +464,7 @@ def generateRnaSeqText( infoAr ):
 	'''
 		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta, isPE]
 	'''
-	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta, isPE = infoAr
+	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta, isPE, stranded = infoAr
 	if height == "":
 		maxheight = "7000"
 		minheight = '0'
@@ -417,6 +476,8 @@ def generateRnaSeqText( infoAr ):
 		else:
 			minheight = heightAr[0]
 			maxheight = heightAr[1]
+	
+
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
@@ -539,53 +600,6 @@ def generatePeakBed( infoAr ):
 	outStr += tab(2) + '}'
 	return outStr
 
-def generateAtacText( infoAr ):
-	label, key, category, tHeight, cColor, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
-	if cColor == '':
-		color = 'gray24'
-	else:
-		color = getColors( cColor )
-	outStr = tab(2) + '{\n'
-	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
-	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
-	outStr += tab(3) + '"style" : {\n'
-	outStr += tab(4) + '"clip_marker_color" : "black",\n'
-	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"height" : {:s}\n'.format('50' if tHeight == '' else tHeight)
-	outStr += tab(3) + '},\n'
-	outStr += tab(3) + '"variance_band" : false,\n'
-	outStr += tab(3) + '"autoscale": "clipped_global",\n'
-	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
-	outStr += tab(3) + '"urlTemplate" : "raw/atac/{:s}",\n'.format( bigWig )
-	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
-	outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
-	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
-	outStr += tab(3) + '"min_score" : 0\n' + tab(2) + '}'
-	return outStr
-
-def generateRNAStrandText( infoAr ):
-	'''
-		infoAr = [label, key, category, track_height, color, bigwig, description, ggf_run/source, source_link, meta]
-	'''
-	label, key, category, tHeight, color, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
-	outStr = tab(2) + '{\n'
-	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
-	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
-	outStr += tab(3) + '"style" : {\n'
-	outStr += tab(4) + '"clip_marker_color" : "black",\n'
-	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"neg_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"height" : {:s}\n'.format('50' if tHeight == '' else tHeight)
-	outStr += tab(3) + '},\n'
-	outStr += tab(3) + '"variance_band" : false,\n'
-	outStr += tab(3) + '"autoscale": "clipped_global",\n'
-	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
-	outStr += tab(3) + '"urlTemplate" : "raw/rna/{:s}",\n'.format( bigWig )
-	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
-	outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
-	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
-	outStr +=  tab(2) + '}'
-	return outStr
 	
 def generateVCFText( infoAr ):
 	label, key, category, tHeight, vcf, desc, sLabel, sLink, meta = infoAr
@@ -601,8 +615,26 @@ def generateVCFText( infoAr ):
 	outStr += tab(2) + '}'
 	return outStr
 
+def getStrandedColors( typeStr ):
+	# no color specifed, return None
+	if typeStr == '':
+		return None
+	# otherwise split by ';'
+	typeAr = typeStr.split(';')
+	# two colors listed
+	if len(typeAr) == 2:
+		tmpAr = [ getColors(x) for x in typeAr ]
+		if tmpAr[0] == 'black' and tmpAr[1] == 'black':
+			typeAr = tmpAr # get the complimentary color
+		else:
+			return tmpAr
+	# one color listed -> get the color then complement it
+	color1 = getColors( typeAr[0] )
+	color2 = getComplimentaryColor( color1 )
+	return [color1, color2]
+
 def getColors( typeStr ):
-	colors = ['blue', 'red', 'orange', 'yellow', 'purple', 'green', 'black', 'gray', 'cyan', 'magenta', 'darkred', 'darkblue' ]
+	
 	typeDict = { 'h2az':'#ee7600', 'h3':'#8b7765', 'h3k4m3':'#9a32cd',
 		'h3k9m2':'#228b22', 'h3k56ac':'#ee1289', 'input':'#708090',
 		'h3k36m3':'#ee2c2c', 'h3k27m3':'#3a5fcd', 'h3t32':'#008b8b',
@@ -616,12 +648,30 @@ def getColors( typeStr ):
 		'h3t32g' :'#00688b', 'methyl':'#a1a1a1','h2ax-elements':'#daa520' }
 	outStr = typeDict.get( typeStr.lower() )
 	if outStr == None:
-		if typeStr.lower() in colors:
+		if typeStr.lower() in COLOR_AR:
 			return typeStr
 		elif typeStr.startswith( '#' ):
 			return typeStr
 		return 'black'
 	return outStr
+
+def getComplimentaryColor( colorStr ):
+	if colorStr in COLOR_AR:
+		fInd = COLOR_AR.index(colorStr)
+		return COMP_COLOR_AR[fInd]
+	else:
+		colorStr=colorStr.replace('#','')
+		r = hex( 255-int(colorStr[0:2],base=16) )[2:]
+		if len(r) == 1:
+			r = '0'+r
+		g = hex( 255-int(colorStr[2:4],base=16) )[2:]
+		if len(g) == 1:
+			g = '0'+g
+		b = hex( 255-int(colorStr[4:6],base=16) )[2:]
+		if len(b) == 1:
+			b = '0'+b
+		return '#' + r + g + b
+		
 
 def getOrthologFormat( orthoStr ):
 	strDict = { 'poplar': 'Ptrichocarpa', 'arabidopsis':'Athaliana',
