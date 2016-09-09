@@ -142,8 +142,8 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			info = lineAr[1:6] + [ lineAr[13] ]
 			outStr += generatePeakBed( info )
 		elif trackType in ['atac','atacseq']:
-			# label, key, category, track_height, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
-			info = lineAr[1:5] + [ lineAr[6] ] + lineAr[8:14]
+			# label, key, category, track_height, color, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:7]+ lineAr[8:14]
 			outStr += generateAtacText( info )
 		elif trackType == 'rnastrand':
 			# label, key, category, trackHeight, chip_type, bigwig, description, ggf_run/source, source_link, mapping_rate, percent_remaining, meta
@@ -540,13 +540,17 @@ def generatePeakBed( infoAr ):
 	return outStr
 
 def generateAtacText( infoAr ):
-	label, key, category, tHeight, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, cColor, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	if cColor == '':
+		color = 'gray24'
+	else:
+		color = getColors( cColor )
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	outStr += tab(3) + '"style" : {\n'
 	outStr += tab(4) + '"clip_marker_color" : "black",\n'
-	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( 'gray24' )
+	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
 	outStr += tab(4) + '"height" : {:s}\n'.format('50' if tHeight == '' else tHeight)
 	outStr += tab(3) + '},\n'
 	outStr += tab(3) + '"variance_band" : false,\n'
