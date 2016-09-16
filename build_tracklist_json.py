@@ -634,7 +634,12 @@ def getStrandedColors( typeStr ):
 	return [color1, color2]
 
 def getColors( typeStr ):
-	
+	if typeStr.startswith( 'gene' ):
+		typeStr = 'gene'
+	elif typeStr.startswith( 'transposon' ):
+		typeStr = 'tes'
+	elif typeStr.startswith( 'rnas' ):
+		typeStr = 'rnas' 
 	typeDict = { 'h2az':'#ee7600', 'h3':'#8b7765', 'h3k4m3':'#9a32cd',
 		'h3k9m2':'#228b22', 'h3k56ac':'#ee1289', 'input':'#708090',
 		'h3k36m3':'#ee2c2c', 'h3k27m3':'#3a5fcd', 'h3t32':'#008b8b',
