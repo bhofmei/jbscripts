@@ -21,9 +21,10 @@ dna: genome version, source
 bed: label, key, category, chip_type, meta
 atac-seq: bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
 vcf: vcf(bigwig), description, source, metadata
+gc-content
 
 Track File: tab or comma separated with headers:
-trackType label key category height chip_type/meth_con/orthologs chip/meth/rna-seq_bigwig rna-seq_bam genome_version/description source_label/ggf_run source_link metadata_key_value
+trackType label key category height chip_type/orthologs chip/meth/rna-seq_bigwig rna-seq_bam genome_version/description source_label/ggf_run source_link metadata_key_value
 '''
 
 def processInputs( trackInfoStr, isQuiet ):
@@ -60,7 +61,7 @@ def tab( n ):
 def readInfoFile( trackInfoStr, isQuiet ):
 
 	#trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe', 'rnaseq-pe-str', 'rnaseq-str'], 'smrna': ['smrna','smrnaseq', 'smrna-str', 'smrnaseq-str'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf']}
-	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe'], 'smrna': ['smrna','smrnaseq'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf']}
+	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe'], 'smrna': ['smrna','smrnaseq'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf'], 'gc': ['gccont', 'gcdens']}
 	trackTypeList = []
 	for x in trackTypeDict.keys():
 		trackTypeList += trackTypeDict[x]
@@ -170,6 +171,12 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			# label, key, category, trackHeight, bigwig, description, source, source_link, meta
 			info = lineAr[1:5] + [ lineAr[6] ] + lineAr[8:11] + [ lineAr[13] ]
 			outStr += generateVCFText( info )
+		
+		elif trackType in trackTypeDict['gc']:
+			# label, key, category, trackHeight, color, description, meta
+			info = lineAr[1:6] + [ lineAr[8] ] + [ lineAr[13] ]
+			info += [ 'dens' in trackType ]
+			outStr += generateGCContent( info )	
 	
 	# end for line
 	trackFile.close()
@@ -554,6 +561,33 @@ def generateReadsText( infoAr ):
 	outStr += tab(2) + '}'
 	return outStr
 
+def generateGCContent( infoAr ):
+	'''
+		infoAr = [label, key, category, track_height, color, description, meta, isDens]
+	'''
+	label, key, category, tHeight, color, desc, meta, isDens = infoAr
+	outStr = tab(2) + '{\n'
+	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
+	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	if tHeight != '' or color != '':
+		outStr += tab(3) + '"style" : {\n'
+		if tHeight != '':
+			outStr += tab(4) + '"height" : {:s},\n'.format( tHeight )
+		colorAr = getStrandedColors( color )
+		if colorAr != None:
+			outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( colorAr[0] )
+			outStr += tab(4) + '"neg_color" : "{:s}",\n'.format( colorAr[1] )
+	# end if tHeight
+		outStr += tab(3) + '},\n'
+	outStr += generateMeta( desc, '', '', '','', meta )
+	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/SequenceChunks",\n'
+	outStr += tab(3) + '"urlTemplate" : "seq/{refseq_dirpath}/{refseq}-",\n'
+	outStr += tab(3) + '"bicolor_pivot": 0.5,\n'
+	outStr += tab(3) + '"type": "GCContent/View/Track/GCContent{:s}",\n'.format( '' if isDens else 'XY' )
+	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
+	outStr += tab(2) + '}'
+	return outStr
+	
 def parseMetaKeys( metaStr ):
 	if metaStr == "":
 		return '\n'
