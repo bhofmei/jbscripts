@@ -10,7 +10,7 @@ def processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, isStrand, isSort
 	else:
 		print( 'Input Files: {:s}'.format( ', '.join( bedFileStrAr ) ) )
 	print('Chromosome sizes file: {:s}\nKeep temporary files: {:s}\nScale by library size: {:s}\nStranded: {:s}\nSorting: {:s}'.format( chrmFileStr, str( keepTmp ), str( isScale), str(isStrand), str(isSort) ) )
-	if len(bedFileStrAr) > numProc:
+	if len(bedFileStrAr) < numProc:
 		numProc = len(bedFileStrAr)
 	print( 'Begin processing files with {:d} processors'.format( numProc ) )
 	pool = multiprocessing.Pool( processes=numProc )
