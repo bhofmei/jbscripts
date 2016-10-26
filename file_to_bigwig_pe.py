@@ -1,24 +1,24 @@
 import sys, math, glob, multiprocessing, subprocess, os, bisect, random
 
-# Usage: file_to_bigwig_pe.py [-keep] [-scale] [-strand] [-sort] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*
+# Usage: file_to_bigwig_pe.py [-keep] [-scale] [-strand] [-sort] [-index] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*
 
 NUMPROC=1
 
-def processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, isStrand, isSort, numProc ):
+def processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, isStrand, isSort, isIndex, numProc ):
 	if len(bedFileStrAr)==1:
 		print( 'Input File: {:s}'.format( bedFileStrAr[0] ) )
 	else:
 		print( 'Input Files: {:s}'.format( ', '.join( bedFileStrAr ) ) )
-	print('Chromosome sizes file: {:s}\nKeep temporary files: {:s}\nScale by library size: {:s}\nStranded: {:s}\nSorting: {:s}'.format( chrmFileStr, str( keepTmp ), str( isScale), str(isStrand), str(isSort) ) )
+	print('Chromosome sizes file: {:s}\nKeep temporary files: {:s}\nScale by library size: {:s}\nStranded: {:s}\nSorting: {:s}\nCreate BAM index: {:s}'.format( chrmFileStr, str( keepTmp ), str( isScale), str(isStrand), str(isSort), str( isIndex ) ) )
 	if len(bedFileStrAr) < numProc:
 		numProc = len(bedFileStrAr)
 	print( 'Begin processing files with {:d} processors'.format( numProc ) )
 	pool = multiprocessing.Pool( processes=numProc )
-	results = [ pool.apply_async( processFile, args=(bedFileStr, chrmFileStr, keepTmp, isScale, isStrand, isSort) ) for bedFileStr in bedFileStrAr ]
+	results = [ pool.apply_async( processFile, args=(bedFileStr, chrmFileStr, keepTmp, isScale, isStrand, isSort, isIndex) ) for bedFileStr in bedFileStrAr ]
 	suc = [ p.get() for p in results ]
 	print( 'Done.' )
 	
-def processFile( bedFileStr, chrmFileStr, keepTmp, isScale, isStrand, isSort ):
+def processFile( bedFileStr, chrmFileStr, keepTmp, isScale, isStrand, isSort, isIndex ):
 	baseDir = os.path.dirname( bedFileStr )
 	ind = bedFileStr.rfind('.')
 	baseName = bedFileStr[:ind]
@@ -27,6 +27,12 @@ def processFile( bedFileStr, chrmFileStr, keepTmp, isScale, isStrand, isSort ):
 	
 	# check for bam file -> convert to bed
 	if bedFileStr.endswith( '.bam' ):
+		# check bam index
+		if isIndex and os.path.isfile( bedFileStr + '.bai' ) == False:
+			print( 'Indexing {:s}'.format( fileBase ) )
+			indCommand = "samtools index {:s}".format( bedFileStr )
+			subprocess.call( indCommand, shell=True )
+			
 		print( 'Converting {:s} to bed'.format( fileBase ) )
 		bamFileStr = bedFileStr
 		bedFileStr = '{:s}.bed'.format( baseName)
@@ -142,9 +148,11 @@ def parseInputs( argv ):
 	isScale = False
 	isStrand = False
 	isSort = False
+	isIndex = False
+	
 	numProc = NUMPROC
 	startInd = 0
-	for i in range(min(5,len(argv)-2)):
+	for i in range(min(6,len(argv)-2)):
 		if argv[i] == '-keep':
 			keepTmp = True
 			startInd += 1
@@ -156,6 +164,9 @@ def parseInputs( argv ):
 			startInd += 1
 		elif argv[i] == '-sort':
 			isSort = True
+			startInd += 1
+		elif argv[i] == '-index':
+			isIndex = True
 			startInd += 1
 		elif argv[i].startswith( '-p=' ):
 			try:
@@ -176,12 +187,12 @@ def parseInputs( argv ):
 	for j in range(startInd+1, len(argv)):
 		bedFileStrAr += [ argv[j] ]
 	
-	processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, isStrand, isSort, numProc )
+	processInputs( chrmFileStr, bedFileStrAr, keepTmp, isScale, isStrand, isSort, isIndex, numProc )
 	
 def printHelp():
 	print ("Usage: python3 file_to_bigwig_pe.py [-keep] [-scale] [-strand] [-sort] [-p=num_proc] <chrm_file> <bam_file | bed_file> [bam_file | bed_file]*")
 	print( 'Convert BED/BAM file to bigWig format for coverage view' )
-	print( 'Note: bedtools, bedGraphToBigWig, and bedSort programs must be in the path' )
+	print( 'Note: bedtools, bedGraphToBigWig, samtools, and bedSort programs must be in the path' )
 	print( 'Required:' )
 	print( 'chrm_file\ttab-delimited file with chromosome names and lengths\n\t\ti.e. fasta index file' )
 	print( 'bam_file\tbam file that already has been indexed, i.e. file.bam.bai' )
@@ -191,6 +202,7 @@ def printHelp():
 	print( '-scale\t\tscale the bigwig values by total number of reads in file' )
 	print( '-strand\t\toutput reads from plus and minus strand to separate files' )
 	print( '-sort\t\tsort bedgraph; use when bigwig conversion fails' )
+	print( '-index\t\tcreate BAM index if it does not already exist' )
 	print( '-p=num_proc\tnumber of processors to use [default 1]' )
 
 if __name__ == "__main__":
