@@ -718,7 +718,7 @@ def getHeightScale( heightStr ):
 			scale = x
 		else:
 			try:
-				n = int( x.replace('px') )
+				n = int( x.replace('px','') )
 				height = str(n)
 			except ValueError:
 				height =''
