@@ -22,6 +22,7 @@ bed: label, key, category, chip_type, meta
 atac-seq: bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
 vcf: vcf(bigwig), description, source, metadata
 gc-content
+nucleotide density: context
 
 Track File: tab or comma separated with headers:
 trackType label key category height chip_type/orthologs chip/meth/rna-seq_bigwig rna-seq_bam genome_version/description source_label/ggf_run source_link metadata_key_value
@@ -61,7 +62,7 @@ def tab( n ):
 def readInfoFile( trackInfoStr, isQuiet ):
 
 	#trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe', 'rnaseq-pe-str', 'rnaseq-str'], 'smrna': ['smrna','smrnaseq', 'smrna-str', 'smrnaseq-str'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf']}
-	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe'], 'smrna': ['smrna','smrnaseq'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf'], 'gc': ['gccont', 'gcdens']}
+	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe'], 'smrna': ['smrna','smrnaseq'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf'], 'gc': ['gccont', 'gcdens'], 'nucdens': ['nucdens']}
 	trackTypeList = []
 	for x in trackTypeDict.keys():
 		trackTypeList += trackTypeDict[x]
@@ -178,6 +179,10 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			info += [ 'dens' in trackType ]
 			outStr += generateGCContent( info )	
 	
+		elif trackType in trackTypeDict['nucdens']:
+			# label, key, category, trackHeight, contexts (can include colors)
+			info = lineAr[1:6]
+			outStr += generateNucDensContent( info )
 	# end for line
 	trackFile.close()
 	return outStr, version
@@ -340,7 +345,13 @@ def generateAnnoText( infoAr ):
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	# style
-	outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
+	outStr += tab(3) + '"histograms" : {\n' + tab(4) + ' "color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
+	# check for style meta info
+	styleTxt, meta = parseMetaStyle( meta )
+	outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature",\n' + tab(4) + '"color" : "{:s}"'.format( color )
+	if styleTxt != '':
+		outStr += ',\n' + styleTxt + '\n'
+	outStr += tab(3) + '},\n'
 	# basics
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/NCList",\n'
 	outStr += tab(3) + '"trackType" : "CanvasFeatures",\n'
@@ -350,7 +361,7 @@ def generateAnnoText( infoAr ):
 	outStr += tab(3) + '"compress" : 0,\n'
 	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
 	outStr += generateMeta( gVersion, sLabel, sLink, '', '', meta )
-	outStr += tab(3) + '"type" : "CanvasFeatures"'
+	outStr += tab(3) + '"type" : "CanvasFeatures"\n'
 	outStr += tab(2) + '}'
 	return outStr
 	
@@ -358,7 +369,9 @@ def generateChipText( infoAr ):
 	'''
 		infoAr = [label, key, category, chip_type, bigwig, description, ggf_run/source, source_link, meta]
 	'''
-	label, key, category, tHeight, chipType, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta, stranded = infoAr
+	label, key, category, tsHeight, chipType, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta, stranded = infoAr
+	tHeight, scaleType = getHeightScale( tsHeight )
+	
 	if stranded:
 		colorAr =  getStrandedColors( chipType )
 	else:
@@ -380,7 +393,8 @@ def generateChipText( infoAr ):
 		outStr += tab(3) + '"storeClass" : "StrandedPlotPlugin/Store/SeqFeature/StrandedBigWig",\n'
 		outStr += tab(3) + '"type" : "StrandedPlotPlugin/View/Track/Wiggle/StrandedXYPlot",\n'
 	else:
-		outStr += tab(3) + '"autoscale": "clipped_global",\n'
+		if scaleType != 'local' and scaleType != '':
+			outStr += tab(3) + '"autoscale": "{:s}",\n'.format( scaleType )
 		outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
 		outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
 		outStr += tab(3) + '"min_score" : 0,\n' 
@@ -392,28 +406,6 @@ def generateChipText( infoAr ):
 	return outStr
 
 def generateAtacText( infoAr ):
-	'''label, key, category, tHeight, cColor, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
-	if cColor == '':
-		color = 'gray24'
-	else:
-		color = getColors( cColor )
-	outStr = tab(2) + '{\n'
-	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
-	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
-	outStr += tab(3) + '"style" : {\n'
-	outStr += tab(4) + '"clip_marker_color" : "black",\n'
-	outStr += tab(4) + '"pos_color" : "{:s}",\n'.format( color )
-	outStr += tab(4) + '"height" : {:s}\n'.format('50' if tHeight == '' else tHeight)
-	outStr += tab(3) + '},\n'
-	outStr += tab(3) + '"variance_band" : false,\n'
-	outStr += tab(3) + '"autoscale": "clipped_global",\n'
-	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
-	outStr += tab(3) + '"urlTemplate" : "raw/atac/{:s}",\n'.format( bigWig )
-	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
-	outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
-	outStr += tab(3) + '"category" : "{:s}",\n'.format( category )
-	outStr += tab(3) + '"min_score" : 0\n' + tab(2) + '}'
-	return outStr'''
 	# atac-seq is the same as chip except urlTemplate
 	outStr = generateChipText( infoAr )
 	outStr = outStr.replace( 'raw/chip/', 'raw/atac/' )
@@ -587,6 +579,72 @@ def generateGCContent( infoAr ):
 	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
 	outStr += tab(2) + '}'
 	return outStr
+
+def generateNucDensContent( infoAr ):
+	'''
+		infoAr = [label, key, category, track_height, color, description, meta, isDens]
+	'''
+	label, key, category, tHeight, contexts = infoAr
+	outStr = tab(2) + '{\n'
+	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
+	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
+	if tHeight != '':
+		outStr += tab(3) + '"style" : {\n'
+		outStr += tab(4) + '"height" : {:s},\n'.format( tHeight )
+		outStr += tab(3) + '},\n'
+	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/SequenceChunks",\n'
+	outStr += tab(3) + '"urlTemplate" : "seq/{refseq_dirpath}/{refseq}-",\n'
+	ctxStr, clrStr = parseContexts( contexts )
+	outStr += tab(3) + '"context" : {:s},\n'.format( ctxStr )
+	if clrStr != '':
+		outStr += tab(3) + '"colors" : {:s},\n'.format( clrStr )
+	outStr += tab(3) + '"type": "NucleotideDensityPlugin/View/Track/NucleotideDensity",\n'
+	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
+	outStr += tab(2) + '}'
+	return outStr
+	
+def parseContexts( contextsStr ):
+	if contextsStr == '':
+		return '["CG"]', ''
+	outColor = '{'
+	outContexts = '['
+	contextsAr = contextsStr.split(';')
+	for context in contextsAr:
+		if ':' in context: # color specified
+			ctx, clr = context.split( ':' )
+			outColor += '"{:s}" : "{:s}",'.format( ctx, clr )
+			outContexts += '"{:s}",'.format( ctx ) 
+		else:
+			outContexts += '"{:s}",'.format( context ) 
+	outColor = outColor[:-1]
+	outContexts = outContexts[:-1]
+	if outColor != '':
+		outColor += '}'
+	outContexts += ']'
+	return outContexts, outColor
+	
+def parseMetaStyle( metaStr ):
+	if metaStr == "":
+		return "", ""
+	styleStr = ""
+	outStr = ""
+	isFirst = True
+	pairsAr = metaStr.split(';')
+	for pair in pairsAr:
+		key, value = pair.split(':')
+		if key.startswith( 'style.' ):
+			key = key.replace('style.', '' )
+			if isFirst:
+				isFirst  = False
+			else:
+				styleStr += ',\n'
+			styleStr += tab(4) + '"'+key+'" : "'+value+'"'
+		else:
+			outStr += pair + ';'
+	# end for
+	if outStr != '':
+		outStr = outStr[:-1]
+	return styleStr, outStr
 	
 def parseMetaKeys( metaStr ):
 	if metaStr == "":
@@ -649,6 +707,25 @@ def generateVCFText( infoAr ):
 	outStr += tab(2) + '}'
 	return outStr
 
+def getHeightScale( heightStr ):
+	height = ''
+	scale = ''
+	scaleTypes = ['local', 'global', 'clipped_global']
+	
+	ar = heightStr.split(';')
+	for x in ar:
+		if x in scaleTypes:
+			scale = x
+		else:
+			try:
+				n = int( x.replace('px') )
+				height = str(n)
+			except ValueError:
+				height =''
+	# end for
+	return height, scale
+		
+
 def getStrandedColors( typeStr ):
 	# no color specifed, return None
 	if typeStr == '':
@@ -684,7 +761,8 @@ def getColors( typeStr ):
 		'chh':'#1e90ff','h3k27m3':'#617ed7','h3t32':'#32a2a2',
 		'h3k36m1':'#AE2020','h3k36m2':'#D42727', 'h3k4m1':'#6A228D',
 		'h3k4m2':'#872CB3','sdg7':'#2e8b57','basej':'#228b22', 
-		'h3t32g' :'#00688b', 'methyl':'#a1a1a1','h2ax-elements':'#daa520' }
+		'h3t32g':'#00688b', 'methyl':'#a1a1a1','h2ax-elements':'#daa520', 
+		'regulatory':'#da2055','h3k23ac':'#8e0a52', 'h3k27ac':'#be0e6d', 'polii':'#006f6f' }
 	outStr = typeDict.get( typeStr.lower() )
 	if outStr == None:
 		if typeStr.lower() in COLOR_AR:
