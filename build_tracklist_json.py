@@ -397,7 +397,7 @@ def generateChipText( infoAr ):
 			outStr += tab(3) + '"autoscale": "{:s}",\n'.format( scaleType )
 		outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
 		outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
-		outStr += tab(3) + '"min_score" : 0,\n' 
+		#outStr += tab(3) + '"min_score" : 0,\n' 
 	
 	outStr += tab(3) + '"urlTemplate" : "raw/chip/{:s}",\n'.format( bigWig )
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
