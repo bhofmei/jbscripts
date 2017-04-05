@@ -393,8 +393,7 @@ def generateChipText( infoAr ):
 		outStr += tab(3) + '"storeClass" : "StrandedPlotPlugin/Store/SeqFeature/StrandedBigWig",\n'
 		outStr += tab(3) + '"type" : "StrandedPlotPlugin/View/Track/Wiggle/StrandedXYPlot",\n'
 	else:
-		if scaleType != 'local' and scaleType != '':
-			outStr += tab(3) + '"autoscale": "{:s}",\n'.format( scaleType )
+		outStr += tab(3) + '"autoscale": "{:s}",\n'.format( scaleType )
 		outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
 		outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
 		#outStr += tab(3) + '"min_score" : 0,\n' 
@@ -709,7 +708,7 @@ def generateVCFText( infoAr ):
 
 def getHeightScale( heightStr ):
 	height = ''
-	scale = ''
+	scale = 'local'
 	scaleTypes = ['local', 'global', 'clipped_global']
 	
 	ar = heightStr.split(';')
