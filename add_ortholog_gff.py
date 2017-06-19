@@ -21,11 +21,13 @@ def processInputs( orthoFileStr, gffFileStr1, gffFileStr2, labels, cols ):
 	speciesNameAr, species1Dict, species2Dict = readOrthoFile( orthoFileStr, cols, useLabels )
 	if useLabels:
 		speciesNameAr = labels
+	#print(species1Dict)
 	
 	print( 'Correcting GFF for species 1...' )
 	# correct species 1
 	readGFF( gffFileStr1, outFileStr1, species1Dict, speciesNameAr[1] )
 	# correct species 2
+	#print(species2Dict)
 	print( 'Correcting GFF for species 2...' )
 	readGFF( gffFileStr2, outFileStr2, species2Dict, speciesNameAr[0] )
 	print( 'Done' )
@@ -43,7 +45,7 @@ def readOrthoFile( orthoFileStr, cols, useLabels ):
 	mCol = max(cols)
 	for line in orthoFile:
 		lineAr = line.rstrip().split('\t')
-		if len(lineAr) <= mCol:
+		if len(lineAr) <= mCol or line.startswith('#'):
 			continue
 		if firstLine:
 			firstLine = False
@@ -93,7 +95,7 @@ def readGFF( gffFileStr, outFileStr, orthoDict, orthoName ):
 	outFile.close()
 		
 def getGeneName (notesStr):
-	search = "Name="
+	search = "ID="
 	index = notesStr.find(search)
 	adIndex = index + len(search)
 	endIndex = notesStr[adIndex:].find(';')
