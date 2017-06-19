@@ -62,7 +62,7 @@ def tab( n ):
 def readInfoFile( trackInfoStr, isQuiet ):
 
 	#trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe', 'rnaseq-pe-str', 'rnaseq-str'], 'smrna': ['smrna','smrnaseq', 'smrna-str', 'smrnaseq-str'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf']}
-	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe'], 'smrna': ['smrna','smrnaseq'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf'], 'gc': ['gccont', 'gcdens'], 'nucdens': ['nucdens']}
+	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe'], 'smrna': ['smrna','smrnaseq'], 'methyl': ['methyl', 'methyl3','methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf'], 'gc': ['gccont', 'gcdens'], 'nucdens': ['nucdens']}
 	trackTypeList = []
 	for x in trackTypeDict.keys():
 		trackTypeList += trackTypeDict[x]
@@ -154,9 +154,10 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			outStr += generateSmRnaSeqText( info )
 		
 		elif trackType in trackTypeDict['methyl']:	
-			if trackType == 'methyl':	# methylation verion 2
-				# label, key, category, track_height, context, bigwig, description, gff_run/source, source label, meta
+			if trackType == 'methyl' or trackType == 'methyl3':	# methylation verion 2 and 3
+				# label, key, category, track_height, context, bigwig, description, gff_run/source, source label, meta, isV3
 				info = lineAr[1:7] + lineAr[8:11] + [ lineAr[13] ]
+				info += [ '3' in trackType ]
 				outStr += generateMethylationTextv2( info )
 			elif trackType == 'methylwig':	# methylation version 1
 				# label, key, category, track_height, (chip_type,) bigwig, description, ggf_run/source, source_link, meta
@@ -393,10 +394,13 @@ def generateChipText( infoAr ):
 		outStr += tab(3) + '"storeClass" : "StrandedPlotPlugin/Store/SeqFeature/StrandedBigWig",\n'
 		outStr += tab(3) + '"type" : "StrandedPlotPlugin/View/Track/Wiggle/StrandedXYPlot",\n'
 	else:
-		outStr += tab(3) + '"autoscale": "{:s}",\n'.format( scaleType )
+		if scaleType != 'local' and scaleType != '':
+			outStr += tab(3) + '"autoscale": "{:s}",\n'.format( scaleType )
+		else:
+			outStr += tab(3) + '"autoscale": "local",\n'
 		outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
 		outStr += tab(3) + '"type" : "JBrowse/View/Track/Wiggle/XYPlot",\n'
-		#outStr += tab(3) + '"min_score" : 0,\n' 
+		outStr += tab(3) + '"min_score" : 0,\n' 
 	
 	outStr += tab(3) + '"urlTemplate" : "raw/chip/{:s}",\n'.format( bigWig )
 	outStr += generateMeta( desc, sLabel, sLink, mapRate, perRemain, meta )
@@ -434,9 +438,9 @@ def generateMethylationTextv1( infoAr ):
 
 def generateMethylationTextv2( infoAr ):
 	'''
-		infoAr = [label, key, category, track_height, context, bigwig, description, ggf_run/source, source_link, meta]
+		infoAr = [label, key, category, track_height, context, bigwig, description, ggf_run/source, source_link, meta, isV3]
 	'''
-	label, key, category, tHeight, mContext, bigWig, desc, sLabel, sLink, meta = infoAr
+	label, key, category, tHeight, mContext, bigWig, desc, sLabel, sLink, meta, isV3 = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
@@ -454,6 +458,9 @@ def generateMethylationTextv2( infoAr ):
 	outStr += tab(3) + '"urlTemplate" : "raw/methyl/{:s}",\n'.format( bigWig )
 	outStr += generateMeta( desc, sLabel, sLink, '','', meta )
 	outStr += tab(3) + '"type" : "MethylationPlugin/View/Track/Wiggle/MethylPlot",\n'
+	# if v3, add methylation option
+	if isV3:
+		outStr += tab(3) + '"methylatedOption" : true,\n'
 	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
 	outStr += tab(2) + '}'
 	return outStr
@@ -668,9 +675,6 @@ def generatePeakBed( infoAr ):
 	label, key, category, tHeight, chipType, meta = infoAr
 	color = getColors( chipType )
 	outStr = tab(2) + '{\n'
-	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
-	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
-	
 	outStr += tab(3) + '"style" : {\n'
 	outStr += tab(4) + '"className" : "feature6",\n'
 	outStr += tab(4) + '"showLabels" : false,\n'
@@ -708,7 +712,7 @@ def generateVCFText( infoAr ):
 
 def getHeightScale( heightStr ):
 	height = ''
-	scale = 'local'
+	scale = ''
 	scaleTypes = ['local', 'global', 'clipped_global']
 	
 	ar = heightStr.split(';')
@@ -755,9 +759,9 @@ def getColors( typeStr ):
 		'h3k36m3':'#ee2c2c', 'h3k27m3':'#3a5fcd', 'h3t32':'#008b8b',
 		'h2bs112':'#6d32c3', 'genes':'#daa520', 'gene':'#daa520', 
 		'rnas':'#18A071', 'rna':'#18A071', 'tes':'#77158D', 'repeats':'#77158D',
-		'transposons':'#77158D', 'mcg':'#b03060', 'mchg':'#2e8b57',
-		'mchh':'#1e90ff', 'cg':'#b03060', 'chg':'#2e8b57',
-		'chh':'#1e90ff','h3k27m3':'#617ed7','h3t32':'#32a2a2',
+		'transposons':'#77158D', 'mcg':'#A36085', 'mchg':'#0072B2',
+		'mchh':'#CF8F00', 'cg':'#A36085', 'chg':'#0072B2',
+		'chh':'#CF8F00','h3k27m3':'#617ed7','h3t32':'#32a2a2',
 		'h3k36m1':'#AE2020','h3k36m2':'#D42727', 'h3k4m1':'#6A228D',
 		'h3k4m2':'#872CB3','sdg7':'#2e8b57','basej':'#228b22', 
 		'h3t32g':'#00688b', 'methyl':'#a1a1a1','h2ax-elements':'#daa520', 
@@ -791,7 +795,8 @@ def getComplimentaryColor( colorStr ):
 
 def getOrthologFormat( orthoStr ):
 	strDict = { 'poplar': 'Ptrichocarpa', 'arabidopsis':'Athaliana',
-		'eutrema':'Esalsugineum', 'maize':'Zmays', 'bdistachyon': 'Bdistachyon' }
+		'eutrema':'Esalsugineum', 'maize':'Zmays', 'bdistachyon': 'Bdistachyon',
+		'maize_v4': 'B73', 'maize_ph207':'Ph207'}
 	outStr = strDict.get( orthoStr )
 	if outStr == None:
 		print( 'WARNING: ortholog name {:s} not recognized'.format( orthoStr ) )
