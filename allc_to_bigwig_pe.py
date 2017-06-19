@@ -34,8 +34,13 @@ def processFile( allCFileStr, chrmFileStr, label, outID, keepTmp, isSort, useAll
 		outID += '_' + label
 	
 	print( 'Reading allC file {:s}'.format( allCFileStr ) )
-	# allC to bedGraphs
+	# allC to bedGraphs with zeros/coverage info
+	if useAll and useZeros:
+		outID += '_allz'
+	elif useAll == False:
+		outID += '_bin'
 	bedGraphStr =  outID + '.bedGraph'
+
 	bedGraphAr = [bedGraphStr + '.' + x for x in ['cg','chg','chh'] ]
 	readAllC( allCFileStr, bedGraphAr, useAll, useZeros )
 	
@@ -177,7 +182,7 @@ def parseInputs( argv ):
 	processInputs( allCFileAr, chrmFileStr, keepTmp, labelsAr, outID, numProc, isSort, useAll, useZeros )
 
 def printHelp():
-	print ("Usage: python3 allc_to_bigwig_pe.py [-keep] [-sort] [-all | -allz] [-L=labels] [-p=num_proc] <chrm_sizes>  <allC_file> [allC_file]*")
+	print ("Usage: python3 allc_to_bigwig_pe.py [-keep] [-sort] [-all | -allz] [-L=labels] [-o=out_id] [-p=num_proc] <chrm_sizes>  <allC_file> [allC_file]*")
 	print( 'Converts allC files to context-specific BigWig files' )
 	print( 'Note: bedGraphToBigWig and bedSort programs must be in the path' )
 	print( 'Required:' )
@@ -185,9 +190,9 @@ def printHelp():
 	print( 'allc_file\tallc file with all chrms and contexts' )
 	print( 'Optional:' )
 	print( '-keep\t\tkeep intermediate files' )
-	print( '-sort\tcalls bedSort; add this option if bigwig conversion fails' )
-	print( '-all\tuse all positions with methylation not just methylated ones' )
-	print( '-allz\tuse all positions with coverage including 0\'s' )
+	print( '-sort\t\tcalls bedSort; add this option if bigwig conversion fails' )
+	print( '-all\t\tuse all positions with methylation [default methylated sites]' )
+	print( '-allz\t\tuse all positions with coverage including 0\'s' )
 	print( '-L=labels\tcomma-separated list of labels to use for the allC files;\n\t\tdefaults to using information from the allc file name' )
 	print( '-o=out_id\toptional identifier to be added to the output file names' )
 	print( '-p=num_proc\tnumber of processors to use [default 1]' )
