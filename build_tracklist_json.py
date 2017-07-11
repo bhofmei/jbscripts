@@ -368,7 +368,7 @@ def generateAnnoText( infoAr ):
 	
 def generateChipText( infoAr ):
 	'''
-		infoAr = [label, key, category, chip_type, bigwig, description, ggf_run/source, source_link, meta]
+		infoAr = [label, key, category, tsHeight, chip_type, bigwig, description, ggf_run/source, source_link, meta]
 	'''
 	label, key, category, tsHeight, chipType, bigWig, desc, sLabel, sLink, mapRate, perRemain, meta, stranded = infoAr
 	tHeight, scaleType = getHeightScale( tsHeight )
@@ -410,6 +410,8 @@ def generateChipText( infoAr ):
 
 def generateAtacText( infoAr ):
 	# atac-seq is the same as chip except urlTemplate
+	if infoAr[4] == "":
+		infoAr[4] = 'atac'
 	outStr = generateChipText( infoAr )
 	outStr = outStr.replace( 'raw/chip/', 'raw/atac/' )
 	return outStr
@@ -754,18 +756,27 @@ def getColors( typeStr ):
 		typeStr = 'tes'
 	elif typeStr.startswith( 'rnas' ):
 		typeStr = 'rnas' 
-	typeDict = { 'h2az':'#ee7600', 'h3':'#8b7765', 'h3k4m3':'#9a32cd',
-		'h3k9m2':'#228b22', 'h3k56ac':'#ee1289', 'input':'#708090',
-		'h3k36m3':'#ee2c2c', 'h3k27m3':'#3a5fcd', 'h3t32':'#008b8b',
-		'h2bs112':'#6d32c3', 'genes':'#daa520', 'gene':'#daa520', 
-		'rnas':'#18A071', 'rna':'#18A071', 'tes':'#77158D', 'repeats':'#77158D',
-		'transposons':'#77158D', 'mcg':'#A36085', 'mchg':'#0072B2',
-		'mchh':'#CF8F00', 'cg':'#A36085', 'chg':'#0072B2',
-		'chh':'#CF8F00','h3k27m3':'#617ed7','h3t32':'#32a2a2',
-		'h3k36m1':'#AE2020','h3k36m2':'#D42727', 'h3k4m1':'#6A228D',
-		'h3k4m2':'#872CB3','sdg7':'#2e8b57','basej':'#228b22', 
-		'h3t32g':'#00688b', 'methyl':'#a1a1a1','h2ax-elements':'#daa520', 
-		'regulatory':'#da2055','h3k23ac':'#8e0a52', 'h3k27ac':'#be0e6d', 'polii':'#006f6f' }
+	typeDict = { 'genes':'#daa520', 'gene':'#daa520', 
+		'rnas':'#18A071', 'rna':'#18A071',
+		'tes':'#77158D', 'repeats':'#77158D', 'transposons':'#77158D',
+		'h2ax-elements':'#daa520', 'regulatory':'#da2055',
+		'mcg':'#A36085', 'mchg':'#0072B2', 'mchh':'#CF8F00',
+		'cg':'#A36085', 'chg':'#0072B2','chh':'#CF8F00',
+		'h2az':'#EE7600', 'h3':'#937E6B', 
+		'h3k4m1':'#701941', 'h3k4m2':'#711B71', 'h3k4m3':'#862BB3',
+		'h3k4me1':'#701941', 'h3k4me2':'#711B71', 'h3k4me3':'#862BB3',
+		'h3k9ac':'#13ED1D', 'h3k9m2':'#228B22', 'h3k9m3':'#165C16',
+		'h3k9me2':'#228B22', 'h3k9me3':'#165C16',
+		'h3k23ac':'#ED735D', 'h3k27ac':'#11B1DC',
+		'h3k27m3':'#225EA8', 'h3k27me3':'#225EA8',
+		'h3k36m1':'#701D19', 'h3k36m2':'#A61B03', 'h3k36m3':'#D42727',
+		'h3k36me1':'#701D19', 'h3k36me2':'#A61B03', 'h3k36me3':'#D42727', 
+		'h3k56ac':'#DB3B7E', 'input':'#E3AC22', 'polii':'#006f6f',
+		'h3t32':'#008b8b', 'h2bs112':'#6d32c3','h3t32':'#32a2a2', 
+		'sdg7':'#2e8b57', 'basej':'#228b22', 
+		'h3t32g':'#00688b', 'methyl':'#a1a1a1',
+		'atac': '#768C9C'
+		 }
 	outStr = typeDict.get( typeStr.lower() )
 	if outStr == None:
 		if typeStr.lower() in COLOR_AR:
