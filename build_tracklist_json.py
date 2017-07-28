@@ -319,7 +319,7 @@ def generateRnaTeText( infoAr ):
 	# histogram and style
 	if color != None:
 		outStr += tab(3) + '"histograms" : {\n' + tab(4) + ' "color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
-		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
+		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature-' + tType + '",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
 	else:
 		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature-' + tType + '"\n' + tab(3) +'},\n'
 	# basics
