@@ -112,8 +112,8 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			outStr += generateGeneText( info )
 			
 		elif trackType in trackTypeDict['rnate']:
-			#label, key, category, track_height, genome_version, source_label, source_link
-			info = lineAr[1:5] + lineAr[8:11]
+			#label, key, category, track_height, genome_version, source_label, source_link, trackType
+			info = lineAr[1:5] + lineAr[8:11] + [lineAr[0]]
 			outStr += generateRnaTeText( info )
 		
 		elif trackType in trackTypeDict['anno']:
@@ -277,7 +277,7 @@ def generateGeneText( infoAr ):
 	# histogram and style
 	if color != None:
 		outStr += tab(3) + '"histograms" : {\n' + tab(4) + ' "color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
-		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
+		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature-genes",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
 	else:
 		outStr += tab(3) + '"style" : {\n' + tab(4) + '"description" : "description,note"\n' + tab(3) +'},\n'
 
@@ -309,9 +309,9 @@ def generateOrtholog( species ):
 
 def generateRnaTeText( infoAr ):
 	'''
-		infoAr = [label, key, category, track_height, genome_version, source_label, source_link]
+		infoAr = [label, key, category, track_height, genome_version, source_label, source_link, type]
 	'''
-	label, key, category, tHeight, gVersion, sLabel, sLink = infoAr
+	label, key, category, tHeight, gVersion, sLabel, sLink, tType = infoAr
 	color = getColors( label )
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
@@ -321,7 +321,7 @@ def generateRnaTeText( infoAr ):
 		outStr += tab(3) + '"histograms" : {\n' + tab(4) + ' "color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
 		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
 	else:
-		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature"\n' + tab(3) +'},\n'
+		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature-' + tType + '"\n' + tab(3) +'},\n'
 	# basics
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/NCList",\n'
 	outStr += tab(3) + '"trackType" : "CanvasFeatures",\n'
