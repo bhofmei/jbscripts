@@ -590,7 +590,7 @@ def generateGCContent( infoAr ):
 
 def generateNucDensContent( infoAr ):
 	'''
-		infoAr = [label, key, category, track_height, color, description, meta, isDens]
+		infoAr = [label, key, category, track_height, color]
 	'''
 	label, key, category, tHeight, contexts = infoAr
 	outStr = tab(2) + '{\n'
@@ -751,6 +751,8 @@ def getStrandedColors( typeStr ):
 
 def getColors( typeStr ):
 	if typeStr.startswith( 'gene' ):
+		typeStr = 'gene'
+	elif typeStr.startswith('transcript'):
 		typeStr = 'gene'
 	elif typeStr.startswith( 'transposon' ):
 		typeStr = 'tes'
