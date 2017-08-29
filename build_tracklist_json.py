@@ -22,7 +22,7 @@ bed: label, key, category, chip_type, meta
 atac-seq: bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
 vcf: vcf(bigwig), description, source, metadata
 gc-content
-nucleotide density: context
+motif density: context
 
 Track File: tab or comma separated with headers:
 trackType label key category height chip_type/orthologs chip/meth/rna-seq_bigwig rna-seq_bam genome_version/description source_label/ggf_run source_link metadata_key_value
@@ -62,7 +62,16 @@ def tab( n ):
 def readInfoFile( trackInfoStr, isQuiet ):
 
 	#trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe', 'rnaseq-pe-str', 'rnaseq-str'], 'smrna': ['smrna','smrnaseq', 'smrna-str', 'smrnaseq-str'], 'methyl': ['methyl', 'methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf']}
-	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe'], 'smrna': ['smrna','smrnaseq'], 'methyl': ['methyl', 'methyl3','methylwig'], 'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'], 'peaks': ['peak', 'peaks'], 'vcf':['vcf'], 'gc': ['gccont', 'gcdens'], 'nucdens': ['nucdens']}
+	trackTypeDict = {'dna':['dna'], 'genes':['genes','gene'], 
+	'rnate': ['rnas', 'te', 'tes', 'transposons', 'repeats'], 'anno': ['anno'], 
+	'chip': ['chip', 'chipseq', 'chip-str', 'chipseq-str'], 'reads': ['reads', 'read'], 
+	'rnaseq': ['rnaseq', 'rnaseqpe', 'rnaseq-pe', 'rnaseq-str', 'rnaseqpe-str', 'rnaseq-pe-str'],
+	'smrna': ['smrna','smrnaseq','smrna-str','smrnaseq-str'],
+	'methyl': ['methyl', 'methyl3','methylwig'],
+	'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'],
+	'peaks': ['peak', 'peaks'], 
+	'vcf':['vcf'], 'gc': ['gccont', 'gcdens'], 
+	'motifdens': ['nucdens','motifdens']}
 	trackTypeList = []
 	for x in trackTypeDict.keys():
 		trackTypeList += trackTypeDict[x]
@@ -140,7 +149,7 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			outStr += generateReadsText( info )
 		
 		elif trackType in trackTypeDict['rnaseq']:
-			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta, isPE
+			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta, isPE, isStranded
 			info = lineAr[1:14]
 			# check PE
 			info +=  ['pe' in trackType ]
@@ -151,6 +160,8 @@ def readInfoFile( trackInfoStr, isQuiet ):
 		elif trackType in trackTypeDict['smrna']:
 			# label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
 			info = lineAr[1:14]
+			# check strand
+			info += [ '-str' in trackType ]
 			outStr += generateSmRnaSeqText( info )
 		
 		elif trackType in trackTypeDict['methyl']:	
@@ -180,10 +191,10 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			info += [ 'dens' in trackType ]
 			outStr += generateGCContent( info )	
 	
-		elif trackType in trackTypeDict['nucdens']:
+		elif trackType in trackTypeDict['motifdens']:
 			# label, key, category, trackHeight, contexts (can include colors)
 			info = lineAr[1:6]
-			outStr += generateNucDensContent( info )
+			outStr += generateMotifDensContent( info )
 	# end for line
 	trackFile.close()
 	return outStr, version
@@ -469,9 +480,9 @@ def generateMethylationTextv2( infoAr ):
 
 def generateRnaSeqText( infoAr ):
 	'''
-		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta, isPE]
+		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta, isPE, isStranded]
 	'''
-	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta, isPE, stranded = infoAr
+	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta, isPE, isStranded = infoAr
 	if height == "":
 		maxheight = "7000"
 		minheight = '0'
@@ -490,10 +501,13 @@ def generateRnaSeqText( infoAr ):
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	# histograms
 	outStr += tab(3) + '"histograms" : {\n'
-	outStr += tab(4) + '"color" : "gray",\n'
-	outStr += tab(4) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
-	outStr += tab(4) + '"min" : {:s},\n'.format( minheight )
-	outStr += tab(4) + '"max" : {:s},\n'.format( maxheight )
+	outStr += tab(4) + '"color" : "#c4c4c4",\n'
+	if isStranded:
+		outStr += tab(4) + '"storeClass" : "StrandedPlotPlugin/Store/SeqFeature/StrandedBigWig",\n'
+	else:
+		outStr += tab(4) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
+		outStr += tab(4) + '"min" : {:s},\n'.format( minheight )
+		outStr += tab(4) + '"max" : {:s},\n'.format( maxheight )
 	outStr += tab(4) + '"urlTemplate" : "raw/rna/{:s}",\n'.format( bigWig )
 	outStr += tab(4) + '"description" : "coverage depth",\n'
 	outStr += tab(4) + '"height" : 100\n'
@@ -514,9 +528,9 @@ def generateRnaSeqText( infoAr ):
 
 def generateSmRnaSeqText( infoAr ):
 	'''
-		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta]
+		infoAr = [label, key, category, track_height, height, bigwig, bam, description, source/ggf_run, source_link, meta, isStranded]
 	'''
-	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta = infoAr
+	label, key, category, tHeight, height, bigWig, bam, desc, sLabel, sLink, mapRate, perRemain, meta, isStranded = infoAr
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
@@ -524,9 +538,12 @@ def generateSmRnaSeqText( infoAr ):
 	if bigWig != '':
 		outStr += tab(3) + '"histograms" : {\n'
 		outStr += tab(4) + '"color" : "#d1d1d1",\n'
-		if height != "":
+		if height != "" and not isStranded:
 			outStr += tab(4) + '"max" : {:s},\n'.format( height )
-		outStr += tab(4) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
+		if isStranded:
+			outStr += tab(4) + '"storeClass" : "StrandedPlotPlugin/Store/SeqFeature/StrandedBigWig",\n'
+		else:
+			outStr += tab(4) + '"storeClass" : "JBrowse/Store/SeqFeature/BigWig",\n'
 		outStr += tab(4) + '"urlTemplate" : "raw/smrna/{:s}",\n'.format( bigWig )
 		outStr += tab(4) + '"description" : "coverage depth",\n'
 		outStr += tab(4) + '"height" : 100\n'
@@ -588,7 +605,7 @@ def generateGCContent( infoAr ):
 	outStr += tab(2) + '}'
 	return outStr
 
-def generateNucDensContent( infoAr ):
+def generateMotifDensContent( infoAr ):
 	'''
 		infoAr = [label, key, category, track_height, color]
 	'''
@@ -603,10 +620,10 @@ def generateNucDensContent( infoAr ):
 	outStr += tab(3) + '"storeClass" : "JBrowse/Store/SeqFeature/SequenceChunks",\n'
 	outStr += tab(3) + '"urlTemplate" : "seq/{refseq_dirpath}/{refseq}-",\n'
 	ctxStr, clrStr = parseContexts( contexts )
-	outStr += tab(3) + '"context" : {:s},\n'.format( ctxStr )
+	outStr += tab(3) + '"motifs" : {:s},\n'.format( ctxStr )
 	if clrStr != '':
 		outStr += tab(3) + '"colors" : {:s},\n'.format( clrStr )
-	outStr += tab(3) + '"type": "NucleotideDensityPlugin/View/Track/NucleotideDensity",\n'
+	outStr += tab(3) + '"type": "MotifDensityPlugin/View/Track/MotifDensity",\n'
 	outStr += tab(3) + '"category" : "{:s}"\n'.format( category )
 	outStr += tab(2) + '}'
 	return outStr
@@ -623,7 +640,7 @@ def parseContexts( contextsStr ):
 			outColor += '"{:s}" : "{:s}",'.format( ctx, clr )
 			outContexts += '"{:s}",'.format( ctx ) 
 		else:
-			outContexts += '"{:s}",'.format( context ) 
+			outContexts += '"{:s}",'.format( context.upper() ) 
 	outColor = outColor[:-1]
 	outContexts = outContexts[:-1]
 	if outColor != '':
