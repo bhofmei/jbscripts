@@ -35,9 +35,9 @@ def processInputs( trackInfoStr, isQuiet ):
 	print( 'Writing to trackList.json' )
 	outFile.write( getStarting() )
 	# read file
-	outStr, version = readInfoFile( trackInfoStr, isQuiet )
+	outStr, version, includeAr = readInfoFile( trackInfoStr, isQuiet )
 	outFile.write( outStr )
-	outFile.write( getEnding( version ) )
+	outFile.write( getEnding( version, includeAr ) )
 	outFile.close()
 	print( 'Done' )
 
@@ -46,13 +46,18 @@ def getStarting():
 	outStr += tab(1) + u'"tracks" : [\n'
 	return outStr
 
-def getEnding( version ):
+def getEnding( version, includeAr ):
 	outStr = u'\n'+ tab(1) + u'],\n'
 	# the names part
 	outStr += tab(1) + u'"names" : {\n'
 	outStr += tab(2) + u'"url" : "names/",\n'
 	outStr += tab(2) + u'"type" : "Hash"\n'
 	outStr += tab(1) + u'},\n'
+	# check includeAr
+	if len(includeAr) == 1:
+		outStr += tab(1) + u'"include" : "'+ includeAr[0]+'",\n'
+	elif len(includeAr) > 1:
+		outStr += tab(1) + u'"include" : [' + ','.join( ['"{:s}"'.format(x) for x in includeAr ] ) + '],\n'
 	outStr += tab(1) + u'"formatVersion" : '+version+'\n}\n'
 	return outStr
 
@@ -79,11 +84,20 @@ def readInfoFile( trackInfoStr, isQuiet ):
 	trackFile = open( trackInfoStr, 'rt' )
 	outStr = ''
 	version = '1'
+	includeAr = []
 	for line in trackFile:
 		if line.startswith( '#' ):
 			if line.startswith( '#Version:' ):
 				lineAr = line.rstrip().split(',')
 				version = lineAr[0].rstrip()[9:]
+			elif line.startswith( '#Includes:' ):
+				# includes need to be ";" separated
+				cleanLine = line.replace('#Includes:','').rstrip().lstrip()
+				if '\t' in cleanLine:
+					cleanLineAr = cleanLine.split('\t')
+				else:
+					cleanLineAr = cleanLine.split(',')
+				includeAr = cleanLineAr[0].split(';')
 			continue
 		line = line.rstrip()
 		if '\t' in line:
@@ -121,8 +135,8 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			outStr += generateGeneText( info )
 			
 		elif trackType in trackTypeDict['rnate']:
-			#label, key, category, track_height, genome_version, source_label, source_link, trackType
-			info = lineAr[1:5] + lineAr[8:11] + [lineAr[0]]
+			#label, key, category, track_height, color, genome_version, source_label, source_link, trackType
+			info = lineAr[1:6] + lineAr[8:11] + [lineAr[0]]
 			outStr += generateRnaTeText( info )
 		
 		elif trackType in trackTypeDict['anno']:
@@ -197,7 +211,7 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			outStr += generateMotifDensContent( info )
 	# end for line
 	trackFile.close()
-	return outStr, version
+	return outStr, version, includeAr
 
 def generateGenomeSource( genomeVersion, sourceLabel, sourceLink ):
 	outStr = ',\n'
@@ -322,14 +336,27 @@ def generateRnaTeText( infoAr ):
 	'''
 		infoAr = [label, key, category, track_height, genome_version, source_label, source_link, type]
 	'''
-	label, key, category, tHeight, gVersion, sLabel, sLink, tType = infoAr
-	color = getColors( label )
+	label, key, category, tHeight, sColor, gVersion, sLabel, sLink, tType = infoAr
+	# no color specified -> use default
+	if sColor == '':
+		color = getColors( label )
+		histColor = color
+	# two colors specified -> feature color; hist color
+	elif ';' in sColor:
+		colorAr = sColor.split(';')
+		color = colorAr[0]
+		histColor = colorAr[1]
+	# single color specified -> color
+	else:
+		color = sColor
+		histColor = sColor
+	
 	outStr = tab(2) + '{\n'
 	outStr += tab(3) + '"key" : "{:s}",\n'.format( key )
 	outStr += tab(3) + '"label" : "{:s}",\n'.format( label )
 	# histogram and style
 	if color != None:
-		outStr += tab(3) + '"histograms" : {\n' + tab(4) + ' "color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
+		outStr += tab(3) + '"histograms" : {\n' + tab(4) + ' "color" : "{:s}"\n'.format( histColor ) + tab(3) + '},\n'
 		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature-' + tType + '",\n' + tab(4) + '"color" : "{:s}"\n'.format( color ) + tab(3) + '},\n'
 	else:
 		outStr += tab(3) + '"style" : {\n' + tab(4) + '"className" : "feature-' + tType + '"\n' + tab(3) +'},\n'
