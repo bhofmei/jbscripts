@@ -5,6 +5,7 @@ def getFormattingScheme( ):
 	out += '\tu\tunderscore\n' 
 	out += '\tz\tzeros prefixing 1\n' 
 	out += '\tn\tdo not include\n'
+	out += '\ta\tas-is (no change)\n'
 	out += '\te\tempty; just the digit (do not use with other options)\n' 
 	out += 'Chromosomes:\tChr1 [default]\n'
 	out += '\tl\tlowercase\n'
@@ -56,6 +57,21 @@ def checkEmpty( options, label ):
 		options = options.lower().replace('e','')
 	return options
 
+def checkEmptyAsIs( options, label ):
+	# check as is first
+	opts = options.lower()
+	isAsIs = 'a' in opts
+	if isAsIs and len(opts) > 1:
+		print('WARNING: do not specify as-is with other options for {:s}...ignoring as-is'.format(label))
+		opts = opts.replace('a', '')
+	
+	# then check empty
+	isEmpty = 'e' in opts
+	if isEmpty and len(opts) > 1:
+		print( 'WARNING: do not specify empty with other options for {:s}...ignoring empty'.format(label) )
+		opts = opts.replace('e', '')
+	return opts
+
 def decodeChrmOptions( options ):
 	opts = list(options.lower())
 	isCap = (None if 'n' in opts else ('l' not in opts) )
@@ -63,9 +79,12 @@ def decodeChrmOptions( options ):
 	isUnSc = 'u' in opts
 	isZero = opts.count( 'z' )
 	isEmpty = 'e' in opts
-	return isCap, isLong, isUnSc, isZero, isEmpty
+	isAsIs = 'a' in opts
+	return isCap, isLong, isUnSc, isZero, isEmpty, isAsIs
 
-def formatChrm( name, isCap, isLong, isUnSc, isZero, isEmpty ):
+def formatChrm( name, isCap, isLong, isUnSc, isZero, isEmpty, isAsIs ):
+	if isAsIs:
+		return name
 	if isCap == None:
 		return None
 	out = ( 'Chr' if isCap else 'chr' )
@@ -92,9 +111,12 @@ def decodeScafOptions( options ):
 	isUnSc = 'u' in opts
 	isZero = opts.count( 'z' )
 	isEmpty = 'e' in opts
-	return isCap, isShort, isUnSc, isZero, isEmpty
+	isAsIs = 'a' in opts
+	return isCap, isShort, isUnSc, isZero, isEmpty, isAsIs
 
-def formatScaf( name, isCap, isShort, isUnSc, isZero, isEmpty ):
+def formatScaf( name, isCap, isShort, isUnSc, isZero, isEmpty, isAsIs ):
+	if isAsIs:
+		return name
 	if isCap == None:
 		return None
 	out = ('Scaf' if isCap else 'scaf' )
@@ -120,9 +142,12 @@ def decodeContigOptions( options ):
 	isUnSc = 'u' in opts
 	isZero = opts.count( 'z' )
 	isEmpty = 'e' in opts
-	return isCap, isUnSc, isZero, isEmpty
+	isAsIs = 'a' in opts
+	return isCap, isUnSc, isZero, isEmpty, isAsIs
 
-def formatContig( name, isCap, isUnSc, isZero, isEmpty ):
+def formatContig( name, isCap, isUnSc, isZero, isEmpty, isAsIs ):
+	if isAsIs:
+		return name
 	if isCap == None:
 		return None
 	out = ('Contig' if isCap else 'contig' )

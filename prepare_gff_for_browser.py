@@ -5,15 +5,15 @@ from name_formatting import *
 
 def processInputs( gffFileStr, includeRNA, includeTransposons, includeRepeats, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions ):
 	# decode option types
-	chrmOptions = checkEmpty( chrmOptions, 'chrms' )
-	cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
-	print( 'Chromosome formatting: {:s}'.format('None' if cCap == None else (formatChrm('1', cCap, cLong, cUnSc, cZero, cEmpty )) ))
-	scafOptions = checkEmpty( scafOptions, 'scaffolds' )
-	sCap, sShort, sUnSc, sZero, sEmpty = decodeScafOptions( scafOptions )
-	print( 'Scaffold formatting: {:s}'.format('None' if sCap == None else (formatScaf('1', sCap, sShort, sUnSc, sZero, sEmpty )) ) )
-	contigOptions = checkEmpty( contigOptions, 'contigs' )
-	tCap, tUnSc, tZero, tEmpty = decodeContigOptions( contigOptions )
-	print( 'Contig formatting: {:s}'.format( 'None' if tCap == None else (formatContig('1', tCap, tUnSc, tZero, tEmpty )) ) )
+	chrmOptions = checkEmptyAsIs( chrmOptions, 'chrms' )
+	cCap, cLong, cUnSc, cZero, cEmpty, cAsIs = decodeChrmOptions( chrmOptions )
+	print( 'Chromosome formatting: {:s}'.format('None' if cCap == None else (formatChrm('1', cCap, cLong, cUnSc, cZero, cEmpty, cAsIs )) ))
+	scafOptions = checkEmptyAsIs( scafOptions, 'scaffolds' )
+	sCap, sShort, sUnSc, sZero, sEmpty, sAsIs = decodeScafOptions( scafOptions )
+	print( 'Scaffold formatting: {:s}'.format('None' if sCap == None else (formatScaf('1', sCap, sShort, sUnSc, sZero, sEmpty, sAsIs )) ) )
+	contigOptions = checkEmptyAsIs( contigOptions, 'contigs' )
+	tCap, tUnSc, tZero, tEmpty, tAsIs = decodeContigOptions( contigOptions )
+	print( 'Contig formatting: {:s}'.format( 'None' if tCap == None else (formatContig('1', tCap, tUnSc, tZero, tEmpty, tAsIs )) ) )
 	oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
 	print( 'Other formatting: {:s}'.format( 'None' if oCap == None else  (formatOther('Other', oCap, oLower, oChrm ) ) ) )
 	mtType, chType, lmType = decodeCLMOptions( clmOptions )
@@ -33,17 +33,17 @@ def processInputs( gffFileStr, includeRNA, includeTransposons, includeRepeats, c
 	
 	if includeRNA:
 		outFileRNA = outPre + '_browser_rna.gff'
-		print( 'Writing {:s}...'.format( outFileRNA ) )
+		print( 'Writing', os.path.basename(outFileRNA) )
 		writeOutput( outFileRNA, rna )
 		
 	if includeTransposons:
 		outFileTE = outPre + '_browser_transposons.gff'
-		print( 'Writing {:s}...'.format( outFileTE ) )
+		print( 'Writing', os.path.basename(outFileTE) )
 		writeOutput( outFileTE, tes )
 		
 	if includeRepeats:
 		outFileRP = outPre + '_browser_repeats.gff'
-		print( 'Writing {:s}...'.format( outFileRP ) )
+		print( 'Writing', os.path.basename(outFileRP) )
 		writeOutput( outFileRP, repeats )
 	print( 'Done' )
 
@@ -70,7 +70,7 @@ def readGFF( gffFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, ot
 			# GFF: (0) chrom (1) source (2) feature (3) start (4) end (5) score
 			# (6) strand (7) frame/phase (8) attributes
 			# don't want chromosomes or exons
-			if lineAr[2] in [ 'chromosome', 'exon', 'protein', 'intron' ]:
+			if lineAr[2] in [ 'chromosome', 'protein', 'intron' ]:
 				continue
 			# format chrm name
 			if lineAr[0] in formatDict.keys():
@@ -115,8 +115,8 @@ def readGFF( gffFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, ot
 					rna += currGeneLine + line
 					currGeneLine = None
 					writeRNA = True
-			# rest of gene stuff
-			elif writeGene:
+			# rest of gene stuff -> don't include exons
+			elif writeGene and lineAr[2] != 'exon':
 				genes += line
 			# possible rest of rna stuff
 			elif writeRNA:
@@ -129,14 +129,14 @@ def formatChrmName( name, chrmOptions, scafOptions, contigOptions, clmOptions, o
 	
 	nType = determineType( name )
 	if nType == 'chr':
-		cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
-		nname = formatChrm( name, cCap, cLong, cUnSc, cZero, cEmpty )
+		cCap, cLong, cUnSc, cZero, cEmpty, cAsIs = decodeChrmOptions( chrmOptions )
+		nname = formatChrm( name, cCap, cLong, cUnSc, cZero, cEmpty, cAsIs )
 	elif nType == 'scaf':
-		sCap, sShort, sUnSc, sZero, sEmpty = decodeScafOptions( scafOptions )
-		nname = formatScaf( name, sCap, sShort, sUnSc, sZero, sEmpty )
+		sCap, sShort, sUnSc, sZero, sEmpty, sAsIs = decodeScafOptions( scafOptions )
+		nname = formatScaf( name, sCap, sShort, sUnSc, sZero, sEmpty, sAsIs )
 	elif nType == 'contig':
-		tCap, tUnSc, tZero, tEmpty = decodeContigOptions( contigOptions )
-		nname = formatContig( name, tCap, tUnSc, tZero, tEmpty )
+		tCap, tUnSc, tZero, tEmpty, tAsIs = decodeContigOptions( contigOptions )
+		nname = formatContig( name, tCap, tUnSc, tZero, tEmpty, tAsIs )
 	elif nType == 'other':
 		oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
 		nname = formatOther( name, oCap, oLower, oChrm )

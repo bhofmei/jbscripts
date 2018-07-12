@@ -5,15 +5,15 @@ from name_formatting import *
 
 def processInputs( inFileStr, delim, colNum, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions ):
 	# decode option types
-	chrmOptions = checkEmpty( chrmOptions, 'chrms' )
-	cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
-	print( 'Chromosome formatting: {:s}'.format('None' if cCap == None else (formatChrm('1', cCap, cLong, cUnSc, cZero, cEmpty )) ))
-	scafOptions = checkEmpty( scafOptions, 'scaffolds' )
-	sCap, sShort, sUnSc, sZero, sEmpty = decodeScafOptions( scafOptions )
-	print( 'Scaffold formatting: {:s}'.format('None' if sCap == None else (formatScaf('1', sCap, sShort, sUnSc, sZero, sEmpty )) ) )
-	contigOptions = checkEmpty( contigOptions, 'contigs' )
-	tCap, tUnSc, tZero, tEmpty = decodeContigOptions( contigOptions )
-	print( 'Contig formatting: {:s}'.format( 'None' if tCap == None else (formatContig('1', tCap, tUnSc, tZero, tEmpty )) ) )
+	chrmOptions = checkEmptyAsIs( chrmOptions, 'chrms' )
+	cCap, cLong, cUnSc, cZero, cEmpty, cAsIs = decodeChrmOptions( chrmOptions )
+	print( 'Chromosome formatting: {:s}'.format('None' if cCap == None else (formatChrm('1', cCap, cLong, cUnSc, cZero, cEmpty, cAsIs )) ))
+	scafOptions = checkEmptyAsIs( scafOptions, 'scaffolds' )
+	sCap, sShort, sUnSc, sZero, sEmpty, sAsIs = decodeScafOptions( scafOptions )
+	print( 'Scaffold formatting: {:s}'.format('None' if sCap == None else (formatScaf('1', sCap, sShort, sUnSc, sZero, sEmpty, sAsIs )) ) )
+	contigOptions = checkEmptyAsIs( contigOptions, 'contigs' )
+	tCap, tUnSc, tZero, tEmpty, tAsIs = decodeContigOptions( contigOptions )
+	print( 'Contig formatting: {:s}'.format( 'None' if tCap == None else (formatContig('1', tCap, tUnSc, tZero, tEmpty, tAsIs )) ) )
 	oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
 	print( 'Other formatting: {:s}'.format( 'None' if oCap == None else  (formatOther('Other', oCap, oLower, oChrm ) ) ) )
 	mtType, chType, lmType = decodeCLMOptions( clmOptions )
@@ -71,14 +71,14 @@ def formatChrmName( name, chrmOptions, scafOptions, contigOptions, clmOptions, o
 	
 	nType = determineType( name )
 	if nType == 'chr':
-		cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
-		nname = formatChrm( name, cCap, cLong, cUnSc, cZero, cEmpty )
+		cCap, cLong, cUnSc, cZero, cEmpty, cAsIs = decodeChrmOptions( chrmOptions )
+		nname = formatChrm( name, cCap, cLong, cUnSc, cZero, cEmpty, cAsIs )
 	elif nType == 'scaf':
-		sCap, sShort, sUnSc, sZero, sEmpty = decodeScafOptions( scafOptions )
-		nname = formatScaf( name, sCap, sShort, sUnSc, sZero, sEmpty )
+		sCap, sShort, sUnSc, sZero, sEmpty, sAsIs = decodeScafOptions( scafOptions )
+		nname = formatScaf( name, sCap, sShort, sUnSc, sZero, sEmpty, sAsIs )
 	elif nType == 'contig':
-		tCap, tUnSc, tZero, tEmpty = decodeContigOptions( contigOptions )
-		nname = formatContig( name, tCap, tUnSc, tZero, tEmpty )
+		tCap, tUnSc, tZero, tEmpty, tAsIs = decodeContigOptions( contigOptions )
+		nname = formatContig( name, tCap, tUnSc, tZero, tEmpty, tAsIs )
 	elif nType == 'other':
 		oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
 		nname = formatOther( name, oCap, oLower, oChrm )

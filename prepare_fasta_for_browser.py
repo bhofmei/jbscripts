@@ -17,15 +17,15 @@ def processInputs( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOpt
 	outFileStr = os.path.join( fileDir,  outName )
 	print( 'FASTA file: {:s}\nOutput file: {:s}'.format( fileName, outName ) )
 	# decode option types
-	chrmOptions = checkEmpty( chrmOptions, 'chrms' )
-	cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
-	print( 'Chromosome formatting: {:s}'.format('None' if cCap == None else (formatChrm('1', cCap, cLong, cUnSc, cZero, cEmpty )) ))
-	scafOptions = checkEmpty( scafOptions, 'scaffolds' )
-	sCap, sShort, sUnSc, sZero, sEmpty = decodeScafOptions( scafOptions )
-	print( 'Scaffold formatting: {:s}'.format('None' if sCap == None else (formatScaf('1', sCap, sShort, sUnSc, sZero, sEmpty )) ) )
-	contigOptions = checkEmpty( contigOptions, 'contigs' )
-	tCap, tUnSc, tZero, tEmpty = decodeContigOptions( contigOptions )
-	print( 'Contig formatting: {:s}'.format( 'None' if tCap == None else (formatContig('1', tCap, tUnSc, tZero, tEmpty )) ) )
+	chrmOptions = checkEmptyAsIs( chrmOptions, 'chrms' )
+	cCap, cLong, cUnSc, cZero, cEmpty, cAsIs = decodeChrmOptions( chrmOptions )
+	print( 'Chromosome formatting: {:s}'.format('None' if cCap == None else (formatChrm('1', cCap, cLong, cUnSc, cZero, cEmpty, cAsIs )) ))
+	scafOptions = checkEmptyAsIs( scafOptions, 'scaffolds' )
+	sCap, sShort, sUnSc, sZero, sEmpty, sAsIs = decodeScafOptions( scafOptions )
+	print( 'Scaffold formatting: {:s}'.format('None' if sCap == None else (formatScaf('1', sCap, sShort, sUnSc, sZero, sEmpty, sAsIs )) ) )
+	contigOptions = checkEmptyAsIs( contigOptions, 'contigs' )
+	tCap, tUnSc, tZero, tEmpty, tAsIs = decodeContigOptions( contigOptions )
+	print( 'Contig formatting: {:s}'.format( 'None' if tCap == None else (formatContig('1', tCap, tUnSc, tZero, tEmpty, tAsIs )) ) )
 	oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
 	print( 'Other formatting: {:s}'.format( 'None' if oCap == None else  (formatOther('Other', oCap, oLower, oChrm ) ) ) )
 	mtType, chType, lmType = decodeCLMOptions( clmOptions )
@@ -59,9 +59,9 @@ def checkIncludeExclude( includeList, excludeList ):
 def readFasta( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions, otherOptions, includeList, excludeList ):
 	fastaFile = open( fastaFileStr, 'r' )
 	# Options
-	cCap, cLong, cUnSc, cZero, cEmpty = decodeChrmOptions( chrmOptions )
-	sCap, sShort, sUnSc, sZero, sEmpty = decodeScafOptions( scafOptions )
-	tCap, tUnSc, tZero, tEmpty = decodeContigOptions( contigOptions )
+	cCap, cLong, cUnSc, cZero, cEmpty, cAsIs = decodeChrmOptions( chrmOptions )
+	sCap, sShort, sUnSc, sZero, sEmpty, sAsIs = decodeScafOptions( scafOptions )
+	tCap, tUnSc, tZero, tEmpty, tAsIs = decodeContigOptions( contigOptions )
 	mtType, chType, lmType = decodeCLMOptions( clmOptions )
 	oCap, oLower, oChrm = decodeOtherOptions( otherOptions )
 	
@@ -91,11 +91,11 @@ def readFasta( fastaFileStr, chrmOptions, scafOptions, contigOptions, clmOptions
 				continue
 			nType = determineType( name )
 			if nType == 'chr':
-				nname = formatChrm( name, cCap, cLong, cUnSc, cZero, cEmpty )
+				nname = formatChrm( name, cCap, cLong, cUnSc, cZero, cEmpty, cAsIs )
 			elif nType == 'scaf':
-				nname = formatScaf( name, sCap, sShort, sUnSc, sZero, sEmpty )
+				nname = formatScaf( name, sCap, sShort, sUnSc, sZero, sEmpty, sAsIs )
 			elif nType == 'contig':
-				nname = formatContig( name, tCap, tUnSc, tZero, tEmpty )
+				nname = formatContig( name, tCap, tUnSc, tZero, tEmpty, tAsIs )
 			elif nType == 'other':
 				nname = formatOther( name, oCap, oLower, oChrm )
 			elif nType ==  'clm':
