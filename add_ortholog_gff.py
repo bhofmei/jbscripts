@@ -1,14 +1,23 @@
 import sys, math, glob, multiprocessing, subprocess, os
 
-# Usage: python3 add_ortholog_gff.py [-l=label1,label2] [-c=col1,col2] <ortholog_file> <species1_gff> <species2_gff>
+# Usage: python3 add_ortholog_gff.py [-l=label1,label2] [-c=col1,col2] [-o1=outfile_species1] [-o2=outfile_species2] <ortholog_file> <species1_gff> <species2_gff>
 # note: only adding the ortholog information to genes
 
-def processInputs( orthoFileStr, gffFileStr1, gffFileStr2, labels, cols ):
+def processInputs( orthoFileStr, gffFileStr1, gffFileStr2, outFileStr1, outFileStr2, labels, cols ):
 	
-	rInd1 = gffFileStr1.rfind( '.' )
-	outFileStr1 = gffFileStr1[:rInd1] + '_ortholog.gff'
-	rInd2 = gffFileStr2.rfind( '.' )
-	outFileStr2 = gffFileStr2[:rInd2] + '_ortholog.gff'
+	if outFileStr1 == None:
+		rInd1 = gffFileStr1.rfind( '.' )
+		if labels != None:
+			outFileStr1 = gffFileStr1[:rInd1] + '_' + labels[1] + '-ortholog.gff'
+		else:
+			outFileStr1 = gffFileStr1[:rInd1] + '_ortholog.gff'
+	if outFileStr2 == None:	
+		rInd2 = gffFileStr2.rfind( '.' )
+		if labels != None:
+			outFileStr2 = gffFileStr2[:rInd2] + '_' + labels[0] + '-ortholog.gff'
+		else:
+			outFileStr2 = gffFileStr2[:rInd2] + '_ortholog.gff'
+	
 	if labels != None:
 		useLabels = True
 	else:
@@ -106,9 +115,11 @@ def getGeneName (notesStr):
 def parseInputs( argv ):
 	labels = None
 	cols = None
+	outFileStr1 = None
+	outFileStr2 = None
 	startInd = 0
 	
-	for i in range(min(2,len(argv)) ):
+	for i in range(min(4,len(argv)) ):
 		if argv[i].startswith( '-l=' ):
 			labels = argv[i][3:].split( ',' )
 			if len(labels) != 2:
@@ -126,6 +137,12 @@ def parseInputs( argv ):
 			except ValueError:
 				print( 'ERROR: at least one column index not an integer' )
 				exit()
+		elif argv[i].startswith('-o1='):
+			outFileStr1 = argv[i][4:]
+			startInd += 1
+		elif argv[i].startswith('-o2='):
+			outFileStr2 = argv[i][4:]
+			startInd += 1
 		elif argv[i].startswith( '-h' ):
 			printHelp()
 			exit()
@@ -137,10 +154,21 @@ def parseInputs( argv ):
 	orthoFileStr = argv[startInd]
 	gffFileStr1 = argv[startInd+1]
 	gffFileStr2 = argv[startInd+2]
-	processInputs( orthoFileStr, gffFileStr1, gffFileStr2, labels, cols )
+	processInputs( orthoFileStr, gffFileStr1, gffFileStr2, outFileStr1, outFileStr2, labels, cols )
 
 def printHelp():
-	print ("Usage: python3 add_ortholog_gff.py [-l=label1,label2] [-c=col1,col2] <ortholog_file> <species1_gff> <species2_gff>")
+	print ("Usage:\tpython3 add_ortholog_gff.py [-l=label1,label2] [-c=col1,col2] \n\t\t[-o1=outfile_species1] [-o2=outfile_species2] <ortholog_file> <species1_gff>\n\t\t<species2_gff>")
+	print()
+	print('Required: ')
+	print('ortholog_file\ttab-delimited file with pairs of orthologous genes\n\t\t\t\tif labels not specified, first line must have species name')
+	print('species1_gff\tGFF file for genes in species 1; gene IDs\n\t\t\t\tshould match those in ortholog file')
+	print('species2_gff\tGFF file for genes in species 2; gene IDs\n\t\t\t\tshould match those in ortholog file')
+	print()
+	print('Optional: ')
+	print('-l=label1,label2\t\tspecies labels to use in use in output GFF of other species;\n\t\t\t\t\t\t[default None--get label from first line of ortholog file]')
+	print('-c=col1,col2\t\t\t0-indexed column number which has the species gene id;\n\t\t\t\t\t\t[Default 0,1]')
+	print('-o1=outfile_species1\toutput file name for species 1 [default appends "ortholog.gff" to\n\t\t\t\t\t\tinput]')
+	print('-o1=outfile_species1\toutput file name for species 2 [default appends "ortholog.gff"\n\t\t\t\t\t\tto input]')
 
 	
 if __name__ == "__main__":
