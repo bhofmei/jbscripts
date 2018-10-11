@@ -544,6 +544,7 @@ def generateRnaSeqText( infoAr ):
 	#outStr += tab(3) + '"maxFeatureScreenDensity" : 2,\n'
 	if isPE:
 		outStr += tab(3) + '"useReverseTemplateOption": true,\n'
+		outStr += tab(3) + '  "useReverseTemplate": true,\n'
 	outStr += tab(3) + '"maxHeight" : {:s},\n'.format( '400' if tHeight == '' else tHeight )
 	outStr += tab(3) + '"urlTemplate" : "raw/rna/{:s}",\n'.format( bam )
 	outStr += tab(3) + '"category" : "{:s}",\n'.format(category)
