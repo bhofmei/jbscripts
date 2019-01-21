@@ -74,6 +74,8 @@ def readInfoFile( trackInfoStr, isQuiet ):
 	'smrna': ['smrna','smrnaseq','smrna-str','smrnaseq-str'],
 	'methyl': ['methyl', 'methyl3','methylwig'],
 	'atac': ['atac', 'atacseq', 'atac-str', 'atacseq-str'],
+	'dap': ['dap', 'dapseq', 'dap-str', 'dapseq-str'],
+	'starr': ['starr', 'starrseq', 'starr-str', 'starrseq-str'],
 	'peaks': ['peak', 'peaks'], 
 	'vcf':['vcf'], 'gc': ['gccont', 'gcdens'], 
 	'motifdens': ['nucdens','motifdens']}
@@ -156,6 +158,18 @@ def readInfoFile( trackInfoStr, isQuiet ):
 			info = lineAr[1:7]+ lineAr[8:14]
 			info += [ '-str' in trackType ]
 			outStr += generateAtacText( info )
+		
+		elif trackType in trackTypeDict['dap']:
+			# label, key, category, track_height, color, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:7]+ lineAr[8:14]
+			info += [ '-str' in trackType ]
+			outStr += generateDapText( info )
+		
+		elif trackType in trackTypeDict['starr']:
+			# label, key, category, track_height, color, bigwig, description, gff_run/source, source_link, mapping_rate, percent_remaining, meta
+			info = lineAr[1:7]+ lineAr[8:14]
+			info += [ '-str' in trackType ]
+			outStr += generateStarrText( info )
 			
 		elif trackType in trackTypeDict['reads']:
 			# label, key, category, track_height, type, bam, description, source/ggf_run, source_link, mapping_rate, percent_remaining, meta
@@ -255,15 +269,22 @@ def generateMeta( description, sLabel, sLink, mapRate, perRemain, meta ):
 		if sLabel != '':
 			outStr += ','
 		outStr += '\n' + tab(4) + '"Description" : "{:s}"'.format( description)
-	# mapping rate
+	# mapping rate/download raw
 	if mapRate != "":
 		if sLabel != "" or description != "":
 			outStr += ','
-		outStr += '\n' + tab(4) + '"Read Mapping Rate" : "{:s}%"'.format( mapRate )
-	if perRemain != "":
-		if sLabel != "" or description != "" or mapRate != "":
-			outStr += ','
-		outStr += '\n' + tab(4) + '"Percent Reads Remaining" : "{:s}%"'.format( perRemain )
+		try:
+			f = float(mapRate)
+			outStr += '\n' + tab(4) + '"Read Mapping Rate" : "{:s}%"'.format( mapRate )
+			if perRemain != "":
+				if sLabel != "" or description != "" or mapRate != "":
+					outStr += ','
+				outStr += '\n' + tab(4) + '"Percent Reads Remaining" : "{:s}%"'.format( perRemain )
+		except ValueError:
+			# we have download label and/or link
+			outStr +='\n' + tab(4) + '"Download" : "{:s}"'.format( mapRate )
+			if perRemain != "":
+				before += tab(3) + '"fmtMetaValue_Download" : "function(source) { return \' <a href='+perRemain+'>'+mapRate+'</a>\';}",\n'
 	# other metadata
 	if meta != "":
 		if description!= '' or sLabel != '' or mapRate != '' or perRemain != '':
@@ -452,6 +473,22 @@ def generateAtacText( infoAr ):
 		infoAr[4] = 'atac'
 	outStr = generateChipText( infoAr )
 	outStr = outStr.replace( 'raw/chip/', 'raw/atac/' )
+	return outStr
+	
+def generateDapText( infoAr ):
+	# dap-seq is the same as chip except urlTemplate
+	if infoAr[4] == "":
+		infoAr[4] = 'dap'
+	outStr = generateChipText( infoAr )
+	outStr = outStr.replace( 'raw/chip/', 'raw/dap/' )
+	return outStr
+
+def generateStarrText( infoAr ):
+	# starr-seq is the same as chip except urlTemplate
+	if infoAr[4] == "":
+		infoAr[4] = 'starr'
+	outStr = generateChipText( infoAr )
+	outStr = outStr.replace( 'raw/chip/', 'raw/starr/' )
 	return outStr
 
 def generateMethylationTextv1( infoAr ):
@@ -822,7 +859,7 @@ def getColors( typeStr ):
 		'h3t32':'#008b8b', 'h2bs112':'#6d32c3','h3t32':'#32a2a2', 
 		'sdg7':'#2e8b57', 'basej':'#228b22', 
 		'h3t32g':'#00688b', 'methyl':'#a1a1a1',
-		'atac': '#768C9C'
+		'atac': '#768C9C', 'dap':'#343A40', 'starr':'#685D79'
 		 }
 	outStr = typeDict.get( typeStr.lower() )
 	if outStr == None:
